@@ -16,4 +16,41 @@ public final class Constants {
   public static class OperatorConstants {
     public static final int kDriverControllerPort = 0;
   }
+
+  public static class MotorConstants {
+    public static final int kVortexFreeSpeedRPM = 6784;
+    public static final int kNeoFreeSpeedRPM = 5676;
+
+    //CAN ID
+    public static final int kFLDriveID = 1;
+    public static final int kFRDriveID = 2;
+    public static final int kBLDriveID = 3;
+    public static final int kBRDriveID = 4;
+
+    public static final int kFLTurnID = 5;
+    public static final int kFRTurnID = 6;
+    public static final int kBLTurnID = 7;
+    public static final int kBRTurnID = 8;
+
+    public static final int kElevatorFrontID = 9; //in heading of robot
+    public static final int kElevatorBackID = 10;
+
+    public static final int kArmID = 11;
+    public static final int kSuctionID = 12;
+
+    public static final int kIntakePivotID = 13;
+    public static final int kIntakeRollersID = 14;
+
+    public static final int kFeederLeftID = 15; //in heading of robot
+    public static final int kFeederRightID = 16;
+
+    //Analog Port ID
+    public static final int kVacuumSensorPortID = 0; 
+  }
+
+  public static class DriveConstants {
+
+  }
+  
+
 }
