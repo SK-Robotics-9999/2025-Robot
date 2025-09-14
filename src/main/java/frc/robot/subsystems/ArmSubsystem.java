@@ -74,12 +74,16 @@ public class ArmSubsystem extends SubsystemBase {
       .idleMode(IdleMode.kBrake)
     ;
 
-
     armConf.encoder
       .positionConversionFactor(armConversionFactor)
       .velocityConversionFactor(armConversionFactor/60.0) //rpm to rps
       .uvwAverageDepth(4)
       .uvwMeasurementPeriod(2)
+    ;
+
+    armConf.absoluteEncoder
+      .velocityConversionFactor(1.0/60.0)
+      .inverted(true)
     ;
 
     armConf.softLimit
@@ -88,7 +92,7 @@ public class ArmSubsystem extends SubsystemBase {
     ;
 
     armConf.closedLoop
-      .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+      .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
       .p(0.1)
       //.velocityFF(12.0 / ( (1/0.77) *360)) //12 volts (approx), how many volts per degree, at 12 volts it can do 1 rotation in 0.77 seconds, dps calculated, pid should carry
     ;

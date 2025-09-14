@@ -22,18 +22,18 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 
 /** Add your docs here. */
 public class FieldNavigation {
-static double botCenterToScorerOffset = Inches.of(2.0).in(Meters);
-    static double botCenterToRearX = Inches.of((30/2.0)+4+0.25+0.5+1.0).in(Meters);
-    static double pidApproachOffset = Inches.of(20.25+12).in(Meters);
+static double botCenterToScorerOffset = Inches.of(0).in(Meters);
+    static double botCenterToRearX = Inches.of((28/2.0)+5).in(Meters);
+    static double pidApproachOffset = Inches.of(((28/2.0)+5)+12).in(Meters);
     static double coralY = Inches.of(15/2.0).in(Meters);
     //These are right relative from the tag's pose facing out  from the reef
-    static Transform2d coralLeft = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, Inches.of(7.0).in(Meters), new Rotation2d(Degrees.of(0))));
-    static Transform2d coralRight = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, Inches.of(-4.0).in(Meters), new Rotation2d(Degrees.of(0))));
+    static Transform2d coralLeft = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, Inches.of(6.5).in(Meters), new Rotation2d(Degrees.of(0))));
+    static Transform2d coralRight = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, Inches.of(-6.5).in(Meters), new Rotation2d(Degrees.of(0))));
     static Transform2d coralMid = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, 0.0, new Rotation2d(Degrees.of(0))));
     static Transform2d reefAlgae = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, 0, new Rotation2d(Degrees.of(0))));
     static Transform2d coralSource = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, 0, new Rotation2d(Degrees.of(180))));
-    static Transform2d coralApproachOffsetLeft = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, Inches.of(7.0).in(Meters), new Rotation2d(Degrees.of(0))));
-    static Transform2d coralApproachOffsetRight = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, Inches.of(-4).in(Meters), new Rotation2d(Degrees.of(0))));
+    static Transform2d coralApproachOffsetLeft = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, Inches.of(6.5).in(Meters), new Rotation2d(Degrees.of(0))));
+    static Transform2d coralApproachOffsetRight = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, Inches.of(-6.5).in(Meters), new Rotation2d(Degrees.of(0))));
 
 
 
