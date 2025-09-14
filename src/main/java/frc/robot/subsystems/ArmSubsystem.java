@@ -40,6 +40,7 @@ public class ArmSubsystem extends SubsystemBase {
 
   // multiply motor rotations to get final, * 360 for rotation to degrees, / 60.926 to get motor rotations to output
   private final static double armConversionFactor = ( (60.0/11.0)*(60.0/34.0)*(114.0/18.0)  )/360.0; 
+  private final static double absConversionFactor = 360.0;
 
   private final double maxVelocity = 30.0; //degrees per second, i hope
   private final double maxAccel = 15.0;
@@ -82,7 +83,8 @@ public class ArmSubsystem extends SubsystemBase {
     ;
 
     armConf.absoluteEncoder
-      .velocityConversionFactor(1.0/60.0)
+      .positionConversionFactor(absConversionFactor)
+      .velocityConversionFactor(absConversionFactor/60.0)
       .inverted(true)
     ;
 
