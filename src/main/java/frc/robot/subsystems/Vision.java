@@ -38,19 +38,19 @@ public class Vision extends SubsystemBase {
 
   NetworkTableInstance table = NetworkTableInstance.getDefault();
   
-  Optional<PhotonCamera> centerCamera;
+  Optional<PhotonCamera> leftCamera;
 
-  Transform3d centerCameraTransform = new Transform3d(new Translation3d(
-    Inches.of(-4.625).in(Meters),
-    Inches.of(0).in(Meters), 
-    Inches.of(17.875).in(Meters)),
-    new Rotation3d(0.0, 0.0, Math.toRadians(180.0))
+  Transform3d leftCameraTransform = new Transform3d(new Translation3d(
+    Inches.of(-5.378).in(Meters),
+    Inches.of(5.5).in(Meters), 
+    Inches.of(7.684).in(Meters)),
+    new Rotation3d(0.0, 20, Math.toRadians(180.0))
   );
   
-  PhotonPoseEstimator centerPoseEstimator = new PhotonPoseEstimator(
+  PhotonPoseEstimator leftPoseEstimator = new PhotonPoseEstimator(
     aprilTagFieldLayout, 
     PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-    centerCameraTransform
+    leftCameraTransform
   );
 
   Field2d visionField2d = new Field2d();
@@ -65,11 +65,11 @@ public class Vision extends SubsystemBase {
   
     
     try{
-      centerCamera = Optional.of(new PhotonCamera("Arducam_OV9782_Shooter_Vision"));
+      leftCamera = Optional.of(new PhotonCamera("Arducam_OV9782_Shooter_Vision"));
     
     }catch(Error e){
       System.err.print(e);
-      centerCamera = Optional.empty();
+      leftCamera = Optional.empty();
     }
    
   }
@@ -80,7 +80,7 @@ public class Vision extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
 
-    SmartDashboard.putBoolean("vision/centerCamera", centerCamera.isPresent());
+    SmartDashboard.putBoolean("vision/leftCamera", leftCamera.isPresent());
 
   }
 
@@ -88,8 +88,8 @@ public class Vision extends SubsystemBase {
 
   public void updateOdometry(){
   
-    if(centerCamera.isPresent()){
-      updateCameraSideOdometry(centerPoseEstimator, centerCamera.get());
+    if(leftCamera.isPresent()){
+      updateCameraSideOdometry(leftPoseEstimator, leftCamera.get());
     }
   }
   private void updateCameraSideOdometry(PhotonPoseEstimator photonPoseEstimator, PhotonCamera camera){
