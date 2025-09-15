@@ -33,10 +33,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.MotorConstants;
 
 public class ArmSubsystem extends SubsystemBase {
-  AnalogInput vacuumSensor = new AnalogInput(0);
 
   SparkMax armMotor = new SparkMax(MotorConstants.kArmID, MotorType.kBrushless);
-  SparkMax suctionMotor = new SparkMax(MotorConstants.kSuctionID, MotorType.kBrushless);
 
   // multiply motor rotations to get final, * 360 for rotation to degrees, / 60.926 to get motor rotations to output
   private final static double armConversionFactor = ( (60.0/11.0)*(60.0/34.0)*(114.0/18.0)  )/360.0; 
@@ -98,14 +96,6 @@ public class ArmSubsystem extends SubsystemBase {
     ;
 
     return armConf;
-  }
-
-  //scales 0.2-4.6, -115 to 0 kPascals
-  public double getPressure(){
-    double voltageRatio = vacuumSensor.getVoltage()/5.0; //technically supply voltage, idt it matter significantly but we will see
-    double pressure = -(voltageRatio-0.92)/0.007652; //technically negative pressure, but positive is more understandable
-
-    return pressure;
   }
 
   //intended to be put in a run command, ff only calculates once
