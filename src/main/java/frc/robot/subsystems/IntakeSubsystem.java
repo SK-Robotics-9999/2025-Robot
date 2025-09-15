@@ -27,8 +27,8 @@ public class IntakeSubsystem extends SubsystemBase {
   /** Creates a new IntakeSubsystem. */
   SparkFlex pivotMotor = new SparkFlex(MotorConstants.kIntakePivotID, MotorType.kBrushless);
   SparkMax rollerMotor = new SparkMax(MotorConstants.kIntakeRollersID, MotorType.kBrushless);
-  SparkMax passthroughLeft = new SparkMax(15, MotorType.kBrushless);
-  SparkMax passthroughRight = new SparkMax(16, MotorType.kBrushless);
+  SparkMax passthroughLeft = new SparkMax(MotorConstants.kFeederLeftID, MotorType.kBrushless);
+  SparkMax passthroughRight = new SparkMax(MotorConstants.kFeederRightID, MotorType.kBrushless);
   
   DigitalInput beambreak = new DigitalInput(1);
 
@@ -42,6 +42,8 @@ public class IntakeSubsystem extends SubsystemBase {
   public IntakeSubsystem() {
     pivotMotor.configure(pivotConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     rollerMotor.configure(rollerConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    passthroughLeft.configure(passthroughConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+    passthroughRight.configure(passthroughConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
     new Trigger(()->intaking)
       .onTrue(
@@ -58,6 +60,8 @@ public class IntakeSubsystem extends SubsystemBase {
     SmartDashboard.putBoolean("/intake/intaking", getIsIntaking());
     SmartDashboard.putNumber("/intake/current", pivotMotor.getOutputCurrent());
     SmartDashboard.putBoolean("/intake/beambreak", !beambreak.get());
+
+    SmartDashboard.putNumber("/intake/passthroughVelocity", passthroughLeft.getEncoder().getVelocity());
 
     if(intaking){
       IntakeStuff();
@@ -103,6 +107,15 @@ public class IntakeSubsystem extends SubsystemBase {
     ;
 
     return pivotConf;
+  }
+
+  SparkBaseConfig passthroughConfig (){
+    SparkBaseConfig config = new SparkMaxConfig();
+    config.encoder
+      .velocityConversionFactor(1/60.0)
+    ;
+
+    return config;
   }
 
   public double getAngle(){

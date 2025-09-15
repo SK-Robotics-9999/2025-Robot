@@ -11,6 +11,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.subsystems.ArmSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.SuctionSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
 
 
@@ -26,6 +27,7 @@ public class RobotContainer {
   ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
   ArmSubsystem armSubsystem = new ArmSubsystem();
   IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
+  SuctionSubsystem suctionSubsystem = new SuctionSubsystem();
 
   CommandXboxController driver = new CommandXboxController(0);
 
@@ -62,6 +64,8 @@ public class RobotContainer {
       .whileTrue(new InstantCommand(()->intakeSubsystem.setIntaking(true)))
       .whileFalse(new InstantCommand(()->intakeSubsystem.setIntaking(false)))
     ;
+
+    driver.b().onTrue(new InstantCommand(()->suctionSubsystem.releaseSolenoid(!suctionSubsystem.getSolenoidReleased())));
   }
 
   /**

@@ -12,26 +12,31 @@ import com.revrobotics.spark.config.SparkMaxConfig;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.DigitalOutput;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.MotorConstants;
 
 public class SuctionSubsystem extends SubsystemBase {
     AnalogInput vacuumSensor = new AnalogInput(0);
+    DigitalOutput solenoid = new DigitalOutput(9);
 
     SparkMax suctionMotor = new SparkMax(MotorConstants.kSuctionID, MotorType.kBrushless);
 
-    private final double kP = 0.01; //decimal percent output per MPa error
-    private final double kI = 0;
-    private final double kD = 0;
-
-    PIDController pid = new PIDController(kP, kI, kD);
+    PIDController pid = new PIDController(0.01, 0, 0);
 
     public SuctionSubsystem() {
-        suctionMotor.configure(getsuctionConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
+        suctionMotor.configure(getSuctionConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     }
 
-    private SparkBaseConfig getsuctionConfig(){
+    public void periodic(){
+        SmartDashboard.putNumber("/suction/pressure", getPressure());
+        SmartDashboard.putBoolean("/suction/solenoidReleased", getSolenoidReleased());
+    }
+
+    private SparkBaseConfig getSuctionConfig(){
         SparkBaseConfig sucConf = new SparkMaxConfig()
         .idleMode(SparkBaseConfig.IdleMode.kBrake)
         .inverted(false)
@@ -56,6 +61,14 @@ public class SuctionSubsystem extends SubsystemBase {
         MathUtil.clamp(output, 0, 1);
         suctionMotor.set(output);
         
+    }
+
+    public void releaseSolenoid(boolean release){
+        solenoid.set(release);
+    }
+
+    public boolean getSolenoidReleased(){
+        return solenoid.get();
     }
     
 }
