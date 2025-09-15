@@ -7,6 +7,7 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.photonvision.EstimatedRobotPose;
@@ -53,17 +54,13 @@ public class Vision extends SubsystemBase {
     leftCameraTransform
   );
 
-  Field2d visionField2d = new Field2d();
-
-  
+  Field2d visionField = new Field2d();
 
   /** Creates a new Vision. */
   public Vision(SwerveSubsystem swerve) {
     this.swerve = swerve;
-    SmartDashboard.putData("visionfield", visionField2d);
-
-  
-    
+    SmartDashboard.putData("visionfield", visionField);
+      
     try{
       leftCamera = Optional.of(new PhotonCamera("Arducam_OV9782_Shooter_Vision"));
     
@@ -92,29 +89,32 @@ public class Vision extends SubsystemBase {
       updateCameraSideOdometry(leftPoseEstimator, leftCamera.get());
     }
   }
+
   private void updateCameraSideOdometry(PhotonPoseEstimator photonPoseEstimator, PhotonCamera camera){
 
-    var latesResults = camera.getAllUnreadResults();
-    for(PhotonPipelineResult result : latesResults){
+    List<PhotonPipelineResult> latestResults = camera.getAllUnreadResults();
+    for(PhotonPipelineResult result : latestResults){
       Optional<EstimatedRobotPose> estimatedPose = photonPoseEstimator.update(result);
       
       if(estimatedPose.isPresent()){
         //Get some data to help diagnose issues
         double neartestTag=distanceToNearestTag(estimatedPose.get());
         SmartDashboard.putNumber("camera/"+camera.getName()+"/nearestTagDist", neartestTag);
-        visionField2d.getObject(camera.getName()).setPose(estimatedPose.get().estimatedPose.toPose2d());
+        visionField.getObject(camera.getName()).setPose(estimatedPose.get().estimatedPose.toPose2d());
 
 
         //Manage std deviations for this result
-        Matrix<N3, N1> stddev;
-        stddev = getStandardDeviationNearest(estimatedPose.get());
+        // Matrix<N3, N1> stddev;
+        // stddev = getStandardDeviationNearest(estimatedPose.get());
 
         
-        swerve.swerveDrive.addVisionMeasurement(
-          estimatedPose.get().estimatedPose.toPose2d(),
-          result.getTimestampSeconds()//,
-          // stddev
-        );
+        //we don't want to update swerve, should be dependent on quest, but need a plan for redundancy.  maybe update directly when close like jib
+        // swerve.swerveDrive.addVisionMeasurement(
+        //   estimatedPose.get().estimatedPose.toPose2d(),
+        //   result.getTimestampSeconds(),
+        //   stddev
+        // );
+        
       }
     }
   }
@@ -134,7 +134,7 @@ public class Vision extends SubsystemBase {
 
     var bot = swerve.getPose().getTranslation();
 
-    return Math.min(bot.getDistance(estimate.getTranslation()), distanceToEstimatedPose);
+    return Math.min(bot.getDistance(estimate.getTranslation()), distanceToEstimatedPose); //??? wtf
   }
   
 

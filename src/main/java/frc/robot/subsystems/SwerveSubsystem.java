@@ -9,6 +9,7 @@ import static edu.wpi.first.units.Units.Meters;
 
 import java.io.File;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.studica.frc.AHRS;
@@ -19,6 +20,7 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -42,16 +44,15 @@ public class SwerveSubsystem extends SubsystemBase {
   SwerveDrive swerveDrive;
 
   //2.24-1.88
-  SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(0.1, 2.75, 0.35);
+  public static final SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(0.1, 2.75, 0.35);
 
   public SwerveSubsystem() {
     SmartDashboard.putData("odometryField", odometryField);
-    File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(),"swervedrive");
+    File swerveJsonDirectory = new File(Filesystem.getDeployDirectory(),"swerve");
         try
         {
           swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(maximumSpeed);
-          // Alternative method if you don't want to supply the conversion factor via JSON files.
-          // swerveDrive = new SwerveParser(directory).createSwerveDrive(maximumSpeed, angleConversionFactor, driveConversionFactor);
+          // swerveDrive.resetOdometry(new Pose2d(2,2,new Rotation2d()));
         } catch (Exception e)
         {
           throw new RuntimeException(e);
@@ -64,7 +65,7 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.updateOdometry();
     odometryField.setRobotPose(swerveDrive.getPose());
 
-    SmartDashboard.putNumber("serve/wheelencoder", swerveDrive.getModules()[0].getPosition().distanceMeters);
+    SmartDashboard.putNumber("swerve/wheelencoder", swerveDrive.getModules()[0].getPosition().distanceMeters);
     
     SmartDashboard.putNumber("swerve/heading", swerveDrive.getOdometryHeading().getDegrees());
     SmartDashboard.putNumber("swerve/x", swerveDrive.getPose().getX());
@@ -73,8 +74,45 @@ public class SwerveSubsystem extends SubsystemBase {
     //SmartDashboard.putBoolean("Navx/Connected", isGyroConnected());
     //SmartDashboard.putBoolean("Navx/Callibrating", isGyroCallibrating());
 
-    }  
+    }
+    
+    //idk if this works
+    public void resetGyro(){
+      AHRS navx = (AHRS)swerveDrive.getGyro().getIMU();
+      navx.reset();
+    }
 
+  public Command driveCommandAllianceManaged(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
+    BooleanSupplier isRed = () -> {
+      // Boolean supplier that controls when the path will be mirrored for the red alliance
+      // This will flip the path being followed to the red side of the field.
+      // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
+
+      var alliance = DriverStation.getAlliance();
+      if (alliance.isPresent()) {
+        return alliance.get() == DriverStation.Alliance.Red;
+      }
+      return false;
+    };
+
+    return run(() -> {
+      // Make the robot move
+      if(isRed.getAsBoolean()){
+        swerveDrive.drive(new Translation2d(-translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+                                            -translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()),
+                          angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity(),
+                          true,
+                          false);
+      }
+      else{
+        swerveDrive.drive(new Translation2d(translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+                                            translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()),
+                          angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity(),
+                          true,
+                          false);
+      }
+    });
+  }
 
   private Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
     return run(() -> {
@@ -98,19 +136,19 @@ public class SwerveSubsystem extends SubsystemBase {
     });
   }
 
-private void stop(){
+  private void stop(){
     swerveDrive.setChassisSpeeds(new ChassisSpeeds());
   }
 
-public boolean isGyroConnected(){
-    var navx = (AHRS)swerveDrive.getGyro().getIMU();
+  public boolean isGyroConnected(){
+    AHRS navx = (AHRS)swerveDrive.getGyro().getIMU();
     if(navx.isConnected()){
       return true;
     }
     return false;
   }
   public boolean isGyroCallibrating(){
-    var navx = (AHRS)swerveDrive.getGyro().getIMU();
+    AHRS navx = (AHRS)swerveDrive.getGyro().getIMU();
     if(navx.isCalibrating()){
       return true;
     }
