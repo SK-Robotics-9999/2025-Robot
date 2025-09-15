@@ -53,7 +53,7 @@ public class ArmSubsystem extends SubsystemBase {
     new TrapezoidProfile.Constraints(maxVelocity, maxAccel)
   );
 
-  ArmFeedforward armFF = new ArmFeedforward(0.0, 0.0, 0.0);
+  ArmFeedforward armFF = new ArmFeedforward(0.03, 0.13, 0.0);
 
   private TrapezoidProfile.State trapState = new TrapezoidProfile.State();
   private TrapezoidProfile.State trapGoal = new TrapezoidProfile.State();

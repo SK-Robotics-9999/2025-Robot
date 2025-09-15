@@ -55,6 +55,8 @@ public class ElevatorSubsystem extends SubsystemBase {
       );
       
       ElevatorFeedforward ElevatorFF = new ElevatorFeedforward(0.0, 0.0, 0.0);
+      final ElevatorFeedforward lowElevatorFF = new ElevatorFeedforward(0.08, 0.22, 0.0);
+      final ElevatorFeedforward highElevatorFF = new ElevatorFeedforward(0.09, 0.31, 0.0);
       
       private TrapezoidProfile.State trapState = new TrapezoidProfile.State();
       private TrapezoidProfile.State trapGoal = new TrapezoidProfile.State();
