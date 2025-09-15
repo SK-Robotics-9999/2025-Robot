@@ -7,6 +7,7 @@ package frc.robot.subsystems;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.photonvision.EstimatedRobotPose;
@@ -38,38 +39,34 @@ public class Vision extends SubsystemBase {
 
   NetworkTableInstance table = NetworkTableInstance.getDefault();
   
-  Optional<PhotonCamera> centerCamera;
+  Optional<PhotonCamera> leftCamera; //in terms of intake is front, so looking at lens straight on will be left side too
 
-  Transform3d centerCameraTransform = new Transform3d(new Translation3d(
+  Transform3d leftCameraTransform = new Transform3d(new Translation3d(
     Inches.of(-4.625).in(Meters),
     Inches.of(0).in(Meters), 
     Inches.of(17.875).in(Meters)),
     new Rotation3d(0.0, 0.0, Math.toRadians(180.0))
   );
   
-  PhotonPoseEstimator centerPoseEstimator = new PhotonPoseEstimator(
+  PhotonPoseEstimator leftPoseEstimator = new PhotonPoseEstimator(
     aprilTagFieldLayout, 
     PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-    centerCameraTransform
+    leftCameraTransform
   );
 
-  Field2d visionField2d = new Field2d();
-
-  
+  Field2d visionField = new Field2d();
 
   /** Creates a new Vision. */
   public Vision(SwerveSubsystem swerve) {
     this.swerve = swerve;
-    SmartDashboard.putData("visionfield", visionField2d);
-
-  
-    
+    SmartDashboard.putData("visionfield", visionField);
+      
     try{
-      centerCamera = Optional.of(new PhotonCamera("Arducam_OV9782_Shooter_Vision"));
+      leftCamera = Optional.of(new PhotonCamera("left_cam"));
     
     }catch(Error e){
       System.err.print(e);
-      centerCamera = Optional.empty();
+      leftCamera = Optional.empty();
     }
    
   }
@@ -80,7 +77,7 @@ public class Vision extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
 
-    SmartDashboard.putBoolean("vision/centerCamera", centerCamera.isPresent());
+    SmartDashboard.putBoolean("vision/leftCameraPresent", leftCamera.isPresent());
 
   }
 
@@ -88,33 +85,36 @@ public class Vision extends SubsystemBase {
 
   public void updateOdometry(){
   
-    if(centerCamera.isPresent()){
-      updateCameraSideOdometry(centerPoseEstimator, centerCamera.get());
+    if(leftCamera.isPresent()){
+      updateCameraSideOdometry(leftPoseEstimator, leftCamera.get());
     }
   }
+
   private void updateCameraSideOdometry(PhotonPoseEstimator photonPoseEstimator, PhotonCamera camera){
 
-    var latesResults = camera.getAllUnreadResults();
-    for(PhotonPipelineResult result : latesResults){
+    List<PhotonPipelineResult> latestResults = camera.getAllUnreadResults();
+    for(PhotonPipelineResult result : latestResults){
       Optional<EstimatedRobotPose> estimatedPose = photonPoseEstimator.update(result);
       
       if(estimatedPose.isPresent()){
         //Get some data to help diagnose issues
         double neartestTag=distanceToNearestTag(estimatedPose.get());
         SmartDashboard.putNumber("camera/"+camera.getName()+"/nearestTagDist", neartestTag);
-        visionField2d.getObject(camera.getName()).setPose(estimatedPose.get().estimatedPose.toPose2d());
+        visionField.getObject(camera.getName()).setPose(estimatedPose.get().estimatedPose.toPose2d());
 
 
         //Manage std deviations for this result
-        Matrix<N3, N1> stddev;
-        stddev = getStandardDeviationNearest(estimatedPose.get());
+        // Matrix<N3, N1> stddev;
+        // stddev = getStandardDeviationNearest(estimatedPose.get());
 
         
-        swerve.swerveDrive.addVisionMeasurement(
-          estimatedPose.get().estimatedPose.toPose2d(),
-          result.getTimestampSeconds()//,
-          // stddev
-        );
+        //we don't want to update swerve, should be dependent on quest, but need a plan for redundancy.  maybe update directly when close like jib
+        // swerve.swerveDrive.addVisionMeasurement(
+        //   estimatedPose.get().estimatedPose.toPose2d(),
+        //   result.getTimestampSeconds(),
+        //   stddev
+        // );
+        
       }
     }
   }
@@ -134,7 +134,7 @@ public class Vision extends SubsystemBase {
 
     var bot = swerve.getPose().getTranslation();
 
-    return Math.min(bot.getDistance(estimate.getTranslation()), distanceToEstimatedPose);
+    return Math.min(bot.getDistance(estimate.getTranslation()), distanceToEstimatedPose); //??? wtf
   }
   
 
