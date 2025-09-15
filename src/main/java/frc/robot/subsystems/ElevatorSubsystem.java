@@ -76,8 +76,10 @@ public class ElevatorSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("/elevator/height", elevatorMotorfront.getEncoder().getPosition());
     SmartDashboard.putBoolean("/elevator/limitSwitchEnabled", !bottomLimitSwitch.get());
     SmartDashboard.putBoolean("/elevator/hasReset", hasReset);
+    SmartDashboard.putNumber("/elevator/pidTarget", pidTarget);
+    SmartDashboard.putBoolean("/elevator/motorsInverted", elevatorMotorback.configAccessor.getFollowerModeInverted());
 
-    setPIDtoPosition(()->pidTarget);
+    // setPIDtoPosition(()->pidTarget);
 
     if (!hasReset && !bottomLimitSwitch.get()){
       elevatorMotorfront.getEncoder().setPosition(0.0);
@@ -110,7 +112,7 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     econfig.closedLoop
         .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-        .p(0.1)
+        .p(0.05)
         .i(0.0)
         .d(0.0)
     ;
@@ -131,7 +133,7 @@ public class ElevatorSubsystem extends SubsystemBase {
       double ff = ElevatorFF.calculate(0.0, 0.0); // just get the kg essentially
         elevatorMotorfront.getClosedLoopController()
           .setReference(
-            trapState.position,
+            setpoint.getAsDouble(),
             ControlType.kPosition,
             ClosedLoopSlot.kSlot0,
             ff,

@@ -28,8 +28,13 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
+import frc.robot.Robot;
 import frc.robot.Constants.MotorConstants;
 
 public class ArmSubsystem extends SubsystemBase {
@@ -39,8 +44,10 @@ public class ArmSubsystem extends SubsystemBase {
   SparkMax suctionMotor = new SparkMax(MotorConstants.kSuctionID, MotorType.kBrushless);
 
   // multiply motor rotations to get final, * 360 for rotation to degrees, / 60.926 to get motor rotations to output
-  private final static double armConversionFactor = ( (60.0/11.0)*(60.0/34.0)*(114.0/18.0)  )/360.0; 
+  private final static double armConversionFactor = 360.0 / ( (60.0/11.0)*(60.0/34.0)*(114.0/18.0)  ); 
   private final static double absConversionFactor = 360.0;
+
+  public int pidTarget = 90;
 
   private final double maxVelocity = 30.0; //degrees per second, i hope
   private final double maxAccel = 15.0;
@@ -53,18 +60,31 @@ public class ArmSubsystem extends SubsystemBase {
   private TrapezoidProfile.State trapState = new TrapezoidProfile.State();
   private TrapezoidProfile.State trapGoal = new TrapezoidProfile.State();
 
-  private final double kUpperLimit = 90.0;
-  private final double kLowerLimit = -45.0;
+  private final double kUpperLimit = 200.0;
+  private final double kLowerLimit = -95.0;
 
   /** Creates a new ArmSubsystem. */
   public ArmSubsystem() {
     armMotor.configure(getArmConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-  }
+    syncEncoders();
 
+    new Trigger(DriverStation::isEnabled)
+    .onTrue(
+      new InstantCommand(this::syncEncoders)
+    );
+
+  }
+  
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+    
+    SmartDashboard.putNumber("/arm/absValue", armMotor.getAbsoluteEncoder().getPosition());
+    SmartDashboard.putNumber("/arm/relativeValue", armMotor.getEncoder().getPosition());
+    SmartDashboard.putNumber("/arm/pidTarget", pidTarget);
+
+    setPIDtoAngle(()->pidTarget);
   }
 
   private SparkBaseConfig getArmConfig() {
@@ -78,14 +98,14 @@ public class ArmSubsystem extends SubsystemBase {
     armConf.encoder
       .positionConversionFactor(armConversionFactor)
       .velocityConversionFactor(armConversionFactor/60.0) //rpm to rps
-      .uvwAverageDepth(4)
-      .uvwMeasurementPeriod(2)
+      // .uvwAverageDepth(4)
+      // .uvwMeasurementPeriod(2)
     ;
 
     armConf.absoluteEncoder
       .positionConversionFactor(absConversionFactor)
       .velocityConversionFactor(absConversionFactor/60.0)
-      .inverted(true)
+      .inverted(false)
     ;
 
     armConf.softLimit
@@ -94,8 +114,9 @@ public class ArmSubsystem extends SubsystemBase {
     ;
 
     armConf.closedLoop
-      .feedbackSensor(FeedbackSensor.kAbsoluteEncoder)
-      .p(0.1)
+      .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
+      .p(1/60.0)
+      .positionWrappingEnabled(false)
       //.velocityFF(12.0 / ( (1/0.77) *360)) //12 volts (approx), how many volts per degree, at 12 volts it can do 1 rotation in 0.77 seconds, dps calculated, pid should carry
     ;
 
@@ -110,12 +131,22 @@ public class ArmSubsystem extends SubsystemBase {
     return pressure;
   }
 
+  public void syncEncoders(){
+    double absValue = armMotor.getAbsoluteEncoder().getPosition();
+    if(absValue>255 && absValue<360){
+      absValue-=360;
+    }
+
+    armMotor.getEncoder().setPosition(absValue);
+  }
+
   //intended to be put in a run command, ff only calculates once
   public void setPIDtoAngle(DoubleSupplier setpoint){
+    SmartDashboard.putNumber("/arm/setpoint", setpoint.getAsDouble());
     double ff = armFF.calculate(Radians.convertFrom(armMotor.getEncoder().getPosition(), Degrees), 0.0);
         armMotor.getClosedLoopController()
           .setReference(
-            trapState.position,
+            setpoint.getAsDouble(),
             ControlType.kPosition,
             ClosedLoopSlot.kSlot0,
             ff,
