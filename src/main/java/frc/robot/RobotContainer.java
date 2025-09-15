@@ -10,7 +10,9 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.subsystems.ArmSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.SwerveSubsystem;
+
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -23,6 +25,7 @@ public class RobotContainer {
   SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
   ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
   ArmSubsystem armSubsystem = new ArmSubsystem();
+  IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
 
   CommandXboxController driver = new CommandXboxController(0);
 
@@ -50,10 +53,15 @@ public class RobotContainer {
 
     // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
 
-    // driver.povUp().onTrue(new InstantCommand(()->elevatorSubsystem.pidTarget+=1));
-    // driver.povDown().onTrue(new InstantCommand(()->elevatorSubsystem.pidTarget-=1));
-    driver.povUp().onTrue(new InstantCommand(()->armSubsystem.pidTarget+=5));
-    driver.povDown().onTrue(new InstantCommand(()->armSubsystem.pidTarget-=5));
+    driver.y().onTrue(new InstantCommand(()->elevatorSubsystem.pidTarget+=1));
+    driver.a().onTrue(new InstantCommand(()->elevatorSubsystem.pidTarget-=1));
+    driver.povRight().onTrue(new InstantCommand(()->armSubsystem.pidTarget+=5));
+    driver.povLeft().onTrue(new InstantCommand(()->armSubsystem.pidTarget-=5));
+
+    driver.povUp()
+      .whileTrue(new InstantCommand(()->intakeSubsystem.setIntaking(true)))
+      .whileFalse(new InstantCommand(()->intakeSubsystem.setIntaking(false)))
+    ;
   }
 
   /**

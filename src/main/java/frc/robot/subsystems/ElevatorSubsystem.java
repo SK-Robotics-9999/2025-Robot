@@ -79,7 +79,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("/elevator/pidTarget", pidTarget);
     SmartDashboard.putBoolean("/elevator/motorsInverted", elevatorMotorback.configAccessor.getFollowerModeInverted());
 
-    // setPIDtoPosition(()->pidTarget);
+    setPIDtoPosition(()->pidTarget);
 
     if (!hasReset && !bottomLimitSwitch.get()){
       elevatorMotorfront.getEncoder().setPosition(0.0);
