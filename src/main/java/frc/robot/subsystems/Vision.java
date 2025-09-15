@@ -34,7 +34,7 @@ public class Vision extends SubsystemBase {
   /** Creates a new Vision. */
   
   SwerveSubsystem swerve ; 
-  AprilTagFieldLayout aprilTagFieldLayout = AprilTagFields.k2025Reefscape.loadAprilTagLayoutField();
+  AprilTagFieldLayout aprilTagFieldLayout = AprilTagFields.k2025ReefscapeWelded.loadAprilTagLayoutField();
 
   NetworkTableInstance table = NetworkTableInstance.getDefault();
   
