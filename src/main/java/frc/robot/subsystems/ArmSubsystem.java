@@ -4,37 +4,43 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.DegreesPerSecond;
+import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
+import static edu.wpi.first.units.Units.Volts;
+
+import java.util.function.DoubleSupplier;
+
+import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
-
-import java.util.function.DoubleSupplier;
-
-import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.units.measure.Voltage;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.Robot;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
 import frc.robot.Constants.MotorConstants;
 
 public class ArmSubsystem extends SubsystemBase {
@@ -45,21 +51,24 @@ public class ArmSubsystem extends SubsystemBase {
   private final static double armConversionFactor = 360.0 / ( (60.0/11.0)*(60.0/34.0)*(114.0/18.0)  ); 
   private final static double absConversionFactor = 360.0;
 
-  public int pidTarget = 90;
-
-  private final double maxVelocity = 30.0; //degrees per second, i hope
-  private final double maxAccel = 15.0;
+  private final double maxVelocity = 450.0; //degrees per second, i hope
+  private final double maxAccel = 550.0;
   private final TrapezoidProfile trapProfile = new TrapezoidProfile(
     new TrapezoidProfile.Constraints(maxVelocity, maxAccel)
   );
 
-  ArmFeedforward armFF = new ArmFeedforward(0.03, 0.13, 0.0);
+  ArmFeedforward armFF = new ArmFeedforward(0.03, 0.12, 0.0264);//i have no idea if the kv is good, but hope it works...
 
   private TrapezoidProfile.State trapState = new TrapezoidProfile.State();
   private TrapezoidProfile.State trapGoal = new TrapezoidProfile.State();
 
   private final double kUpperLimit = 200.0;
   private final double kLowerLimit = -95.0;
+
+  SysIdRoutine routine = new SysIdRoutine(
+    new SysIdRoutine.Config(Volts.of(0.05).per(Second), Volts.of(1), Seconds.of(15)), 
+    new SysIdRoutine.Mechanism(this::setVoltage, this::logMotors, this)
+    );
 
   /** Creates a new ArmSubsystem. */
   public ArmSubsystem() {
@@ -72,6 +81,7 @@ public class ArmSubsystem extends SubsystemBase {
       new InstantCommand(this::syncEncoders)
     );
 
+    setDefaultCommand(hold());
   }
   
   @Override
@@ -80,16 +90,18 @@ public class ArmSubsystem extends SubsystemBase {
     
     SmartDashboard.putNumber("/arm/absValue", armMotor.getAbsoluteEncoder().getPosition());
     SmartDashboard.putNumber("/arm/relativeValue", armMotor.getEncoder().getPosition());
-    SmartDashboard.putNumber("/arm/pidTarget", pidTarget);
+    SmartDashboard.putNumber("/arm/relativeVelo", armMotor.getEncoder().getVelocity());
 
-    setPIDtoAngle(()->pidTarget);
+    SmartDashboard.putNumber("/arm/voltage", armMotor.getAppliedOutput()*armMotor.getBusVoltage());
+    SmartDashboard.putNumber("/arm/current", armMotor.getOutputCurrent()); 
+
   }
 
   private SparkBaseConfig getArmConfig() {
     SparkBaseConfig armConf = new SparkMaxConfig()
       .inverted(false)
-      .smartCurrentLimit(10)
-      .closedLoopRampRate(0.2)
+      .smartCurrentLimit(20) //don't need that much but wtv
+      .closedLoopRampRate(0.02)
       .idleMode(IdleMode.kBrake)
     ;
 
@@ -115,7 +127,6 @@ public class ArmSubsystem extends SubsystemBase {
       .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
       .p(1/60.0)
       .positionWrappingEnabled(false)
-      //.velocityFF(12.0 / ( (1/0.77) *360)) //12 volts (approx), how many volts per degree, at 12 volts it can do 1 rotation in 0.77 seconds, dps calculated, pid should carry
     ;
 
     return armConf;
@@ -131,6 +142,23 @@ public class ArmSubsystem extends SubsystemBase {
     armMotor.getEncoder().setPosition(absValue);
   }
 
+  public void setVoltage(Voltage volts){
+    Voltage ff = Volts.of(armFF.calculate(Radians.convertFrom(armMotor.getEncoder().getPosition(), Degrees), 0.0));
+    armMotor.setVoltage(volts);
+  }
+
+  public double getAngle(){
+    return armMotor.getEncoder().getPosition();
+  }
+
+  public void logMotors(SysIdRoutineLog log){
+    log.motor("armMotor")
+      .voltage(Volts.of(armMotor.getAppliedOutput()*armMotor.getBusVoltage()))
+      .angularPosition(Degrees.of(getAngle()))
+      .angularVelocity(DegreesPerSecond.of(armMotor.getEncoder().getVelocity()))
+    ;
+  }
+
   //intended to be put in a run command, ff only calculates once
   public void setPIDtoAngle(DoubleSupplier setpoint){
     SmartDashboard.putNumber("/arm/setpoint", setpoint.getAsDouble());
@@ -144,6 +172,22 @@ public class ArmSubsystem extends SubsystemBase {
             ArbFFUnits.kVoltage
           )
         ;
+  }
+
+
+  public Command stop(){
+    return new InstantCommand(()->armMotor.set(0));
+  }
+
+  public Command hold(){
+    return new RunCommand(()->{
+        double ff = armFF.calculate(Math.toRadians(getAngle()), 0.0);
+        SmartDashboard.putNumber("/arm/realVoltage", ff);
+        armMotor.setVoltage(ff);
+      },
+      this
+    );
+    
   }
 
   public Command setArmAngleTrap(DoubleSupplier setpoint){
@@ -166,6 +210,19 @@ public class ArmSubsystem extends SubsystemBase {
           )
         ;
       }
+    );
+  }
+
+
+  public Command getSysIDRoutine(){
+    return Commands.sequence(
+      routine.quasistatic(Direction.kForward).withTimeout(15),
+      hold().withTimeout(1),
+      routine.quasistatic(Direction.kReverse).withTimeout(10),
+      hold().withTimeout(1),
+      routine.dynamic(Direction.kForward).withTimeout(5),
+      hold().withTimeout(1),
+      routine.dynamic(Direction.kReverse).withTimeout(5)
     );
   }
 

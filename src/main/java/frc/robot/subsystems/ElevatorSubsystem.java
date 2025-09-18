@@ -81,8 +81,8 @@ public class ElevatorSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("/elevator/pidTarget", pidTarget);
     SmartDashboard.putBoolean("/elevator/motorsInverted", elevatorMotorback.configAccessor.getFollowerModeInverted());
 
-    setPIDtoPosition(()->pidTarget);
 
+    //for some reason doesn't work in a trigger, whatever, not important rn i hope
     if (!hasReset && !bottomLimitSwitch.get()){
       elevatorMotorfront.getEncoder().setPosition(0.0);
       elevatorMotorback.getEncoder().setPosition(0.0);

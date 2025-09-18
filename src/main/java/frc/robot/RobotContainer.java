@@ -57,8 +57,9 @@ public class RobotContainer {
 
     driver.y().onTrue(new InstantCommand(()->elevatorSubsystem.pidTarget+=1));
     driver.a().onTrue(new InstantCommand(()->elevatorSubsystem.pidTarget-=1));
-    driver.povRight().onTrue(new InstantCommand(()->armSubsystem.pidTarget+=5));
-    driver.povLeft().onTrue(new InstantCommand(()->armSubsystem.pidTarget-=5));
+    driver.x().whileTrue(armSubsystem.getSysIDRoutine());
+    driver.povLeft().whileTrue(armSubsystem.setArmAngleTrap(()->90));
+    driver.povRight().whileTrue(armSubsystem.setArmAngleTrap(()->-90));
 
     driver.povUp()
       .whileTrue(new InstantCommand(()->intakeSubsystem.setIntaking(true)))
