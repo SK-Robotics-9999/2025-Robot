@@ -51,7 +51,7 @@ public class ArmSubsystem extends SubsystemBase {
   private final static double armConversionFactor = 360.0 / ( (60.0/11.0)*(60.0/34.0)*(114.0/18.0)  ); 
   private final static double absConversionFactor = 360.0;
 
-  private double targetAngle = 0;
+  private double targetAngle = 90.0;
 
   private final double maxVelocity = 450.0; //degrees per second, i hope
   private final double maxAccel = 550.0;
@@ -100,7 +100,8 @@ public class ArmSubsystem extends SubsystemBase {
       new InstantCommand(this::syncEncoders)
     );
 
-    setDefaultCommand(hold());
+    // setDefaultCommand(hold());
+    setDefaultCommand(setArmAngleTrap(()->targetAngle));
   }
   
   
@@ -122,7 +123,6 @@ public class ArmSubsystem extends SubsystemBase {
     ApplyStates();
     previousWantedState = this.wantedState;
 
-    setPIDtoAngle(()->targetAngle);
   }
 
   public SystemState handleStateTransitions(){
@@ -142,7 +142,7 @@ public class ArmSubsystem extends SubsystemBase {
   public void ApplyStates(){
     switch (systemState) {
       case HOMING:
-        targetAngle = 0;
+        targetAngle = 90.0;
         break;
       case IDLING:
         //targetAngle stays same
@@ -199,7 +199,6 @@ public class ArmSubsystem extends SubsystemBase {
   }
 
   public void setVoltage(Voltage volts){
-    Voltage ff = Volts.of(armFF.calculate(Radians.convertFrom(armMotor.getEncoder().getPosition(), Degrees), 0.0));
     armMotor.setVoltage(volts);
   }
 
