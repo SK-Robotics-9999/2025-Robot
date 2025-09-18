@@ -55,16 +55,17 @@ public class RobotContainer {
 
     // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
 
-    driver.y().onTrue(new InstantCommand(()->elevatorSubsystem.pidTarget+=1));
-    driver.a().onTrue(new InstantCommand(()->elevatorSubsystem.pidTarget-=1));
-    driver.x().whileTrue(armSubsystem.getSysIDRoutine());
-    driver.povLeft().whileTrue(armSubsystem.setArmAngleTrap(()->90));
-    driver.povRight().whileTrue(armSubsystem.setArmAngleTrap(()->-90));
+    // driver.b().whileTrue(elevatorSubsystem.setElevatorPositionTrap(()->40));
+    // driver.y().whileTrue(elevatorSubsystem.setElevatorPositionTrap(()->20));
+    // driver.a().whileTrue(elevatorSubsystem.setElevatorPositionTrap(()->0));
+    // driver.x().whileTrue(elevatorSubsystem.getSysIDRoutine());
+    // driver.povLeft().whileTrue(armSubsystem.setArmAngleTrap(()->90));
+    // driver.povRight().whileTrue(armSubsystem.setArmAngleTrap(()->-90));
 
-    driver.povUp()
-      .whileTrue(new InstantCommand(()->intakeSubsystem.setIntaking(true)))
-      .whileFalse(new InstantCommand(()->intakeSubsystem.setIntaking(false)))
-    ;
+    // driver.povUp()
+    //   .whileTrue(new InstantCommand(()->intakeSubsystem.setIntaking(true)))
+    //   .whileFalse(new InstantCommand(()->intakeSubsystem.setIntaking(false)))
+    // ;
 
     driver.b().onTrue(new InstantCommand(()->suctionSubsystem.releaseSolenoid(!suctionSubsystem.getSolenoidReleased())));
   }
