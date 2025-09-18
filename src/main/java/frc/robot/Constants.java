@@ -52,5 +52,14 @@ public final class Constants {
 
   }
   
+  public static class ArmConstants{
+    public static final int intakeAngle = -90;
+    //THESE ALL NEED TO BE CHANGED
+    public static final int scoreL1 = 0;
+    public static final int scoreL2 = 5;
+    public static final int scoreL3 = 10;
+    public static final int scoreL4 = 20;
+    public static final int barge = 90;
+  }
 
 }

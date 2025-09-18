@@ -51,6 +51,8 @@ public class ArmSubsystem extends SubsystemBase {
   private final static double armConversionFactor = 360.0 / ( (60.0/11.0)*(60.0/34.0)*(114.0/18.0)  ); 
   private final static double absConversionFactor = 360.0;
 
+  private double targetAngle = 0;
+
   private final double maxVelocity = 450.0; //degrees per second, i hope
   private final double maxAccel = 550.0;
   private final TrapezoidProfile trapProfile = new TrapezoidProfile(
@@ -70,6 +72,23 @@ public class ArmSubsystem extends SubsystemBase {
     new SysIdRoutine.Mechanism(this::setVoltage, this::logMotors, this)
     );
 
+
+  public enum WantedState{
+    HOME,
+    IDLE,
+    MOVE_TO_POSITION
+  }
+
+  public enum SystemState{
+    HOMING,
+    IDLING,
+    MOVING_TO_POSITION
+  }
+
+  private WantedState wantedState = WantedState.IDLE;
+  private WantedState previousWantedState = WantedState.IDLE;
+  private SystemState systemState = SystemState.IDLING;
+
   /** Creates a new ArmSubsystem. */
   public ArmSubsystem() {
     armMotor.configure(getArmConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
@@ -84,6 +103,7 @@ public class ArmSubsystem extends SubsystemBase {
     setDefaultCommand(hold());
   }
   
+  
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
@@ -95,6 +115,42 @@ public class ArmSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("/arm/voltage", armMotor.getAppliedOutput()*armMotor.getBusVoltage());
     SmartDashboard.putNumber("/arm/current", armMotor.getOutputCurrent()); 
 
+    SmartDashboard.putNumber("/arm/targetAngle", targetAngle);
+
+    systemState = handleStateTransitions();
+
+    ApplyStates();
+    previousWantedState = this.wantedState;
+
+    setPIDtoAngle(()->targetAngle);
+  }
+
+  public SystemState handleStateTransitions(){
+    switch (wantedState){
+      case HOME:
+        if(previousWantedState != WantedState.HOME){
+            return SystemState.HOMING;
+        }
+      case IDLE:
+        return SystemState.IDLING;
+      case MOVE_TO_POSITION:
+        return SystemState.MOVING_TO_POSITION;
+    }
+    return SystemState.IDLING;
+  }
+
+  public void ApplyStates(){
+    switch (systemState) {
+      case HOMING:
+        targetAngle = 0;
+        break;
+      case IDLING:
+        //targetAngle stays same
+        break;
+      case MOVING_TO_POSITION:
+        targetAngle = trapGoal.position;
+        break;
+    }
   }
 
   private SparkBaseConfig getArmConfig() {
@@ -225,5 +281,13 @@ public class ArmSubsystem extends SubsystemBase {
       routine.dynamic(Direction.kReverse).withTimeout(5)
     );
   }
+  public void SetWantedState(WantedState wantedState){
+    this.wantedState = wantedState;
+  }
+  public void SetWantedState(WantedState wantedState, int targetAngle){
+    this.wantedState = wantedState;
+    this.targetAngle = targetAngle;
+  }
+  
 
 }
