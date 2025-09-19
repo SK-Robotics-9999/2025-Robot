@@ -33,11 +33,29 @@ public class IntakeSubsystem extends SubsystemBase {
   DigitalInput beambreak = new DigitalInput(1);
 
 
+
+
   private final double absConversionFactor = (18.0/40.0) * 360.0;
   
   private boolean intaking = false;
 
   public double pidTargetIntake = 157.0; // close to absConversionFactor
+
+  public enum WantedState{
+    HOME,
+    IDLE,
+    INTAKE
+  }
+
+  public enum SystemState{
+    HOMING,
+    IDLING,
+    INTAKING
+  }
+
+  private WantedState wantedState = WantedState.IDLE;
+  private WantedState previousWantedState = WantedState.IDLE;
+  private SystemState systemState = SystemState.IDLING;
 
   public IntakeSubsystem() {
     pivotMotor.configure(pivotConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
@@ -52,6 +70,33 @@ public class IntakeSubsystem extends SubsystemBase {
       );
   }
 
+  public SystemState handleStateTransitions(){
+    switch (wantedState){
+      case HOME:
+        if(previousWantedState != WantedState.HOME){
+            return SystemState.HOMING;
+        }
+      case IDLE:
+        return SystemState.IDLING;
+      case INTAKE:
+        return SystemState.INTAKING;
+    }
+    return SystemState.IDLING;
+  }
+
+  public void ApplyStates(){
+    switch (systemState) {
+      case HOMING:
+        intaking = false;
+        break;
+      case IDLING:
+        //DONT CHANGE
+        break;
+      case INTAKING:
+        intaking = true;
+        break;
+    }
+  }
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
