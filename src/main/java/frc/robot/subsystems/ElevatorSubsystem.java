@@ -1,24 +1,19 @@
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.InchesPerSecond;
+import static edu.wpi.first.units.Units.Second;
+import static edu.wpi.first.units.Units.Seconds;
+import static edu.wpi.first.units.Units.Volts;
+
+import java.util.function.DoubleSupplier;
+
+import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkBase.ControlType;
 import com.revrobotics.spark.SparkBase.PersistMode;
 import com.revrobotics.spark.SparkBase.ResetMode;
 import com.revrobotics.spark.SparkClosedLoopController.ArbFFUnits;
 import com.revrobotics.spark.SparkLowLevel.MotorType;
-
-import static edu.wpi.first.units.Units.Degrees;
-import static edu.wpi.first.units.Units.DegreesPerSecond;
-import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.RadiansPerSecond;
-import static edu.wpi.first.units.Units.Second;
-import static edu.wpi.first.units.Units.Seconds;
-import static edu.wpi.first.units.Units.Volts;
-import static edu.wpi.first.units.Units.Inches;
-import static edu.wpi.first.units.Units.InchesPerSecond;
-
-import java.util.function.DoubleSupplier;
-
-import com.revrobotics.spark.ClosedLoopSlot;
 import com.revrobotics.spark.SparkMax;
 import com.revrobotics.spark.config.ClosedLoopConfig.FeedbackSensor;
 import com.revrobotics.spark.config.SparkBaseConfig;
@@ -29,20 +24,16 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ElevatorFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Voltage;
-import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog;
-import edu.wpi.first.math.filter.Debouncer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import frc.robot.Constants.ElevatorConstants;
 import frc.robot.Constants.MotorConstants;
 
 public class ElevatorSubsystem extends SubsystemBase {
@@ -70,10 +61,65 @@ public class ElevatorSubsystem extends SubsystemBase {
   private final double kUpperLimit = 53.0; //inches
   private final double kLowerLimit = 0; //inches
 
+  private double targetPosition = 0.0;
+
+
   SysIdRoutine routine = new SysIdRoutine(
     new SysIdRoutine.Config(Volts.of(0.15).per(Second), Volts.of(1.5), Seconds.of(10)), 
     new SysIdRoutine.Mechanism(this::setVoltage, this::logMotors, this)
   );
+
+  public static enum WantedState{
+    HOME,
+    IDLE,
+    MOVE_TO_POSITION
+  }
+
+  public static enum SystemState{
+    HOMING,
+    IDLING,
+    MOVING_TO_POSITION
+  }
+
+  private WantedState wantedState = WantedState.IDLE;
+  private WantedState previousWantedState = WantedState.IDLE;
+  private SystemState systemState = SystemState.IDLING;
+
+  public SystemState handleStateTransitions(){
+    switch (wantedState){
+      case HOME:
+        if(previousWantedState != WantedState.HOME){
+            return SystemState.HOMING;
+        }
+      case IDLE:
+        return SystemState.IDLING;
+      case MOVE_TO_POSITION:
+        return SystemState.MOVING_TO_POSITION;
+    }
+    return SystemState.IDLING;
+  }
+
+  public void ApplyStates(){
+    switch (systemState) {
+      case HOMING:
+        targetPosition = 0.0;
+        if(trapGoal.position!=targetPosition){
+          trapState = new TrapezoidProfile.State(elevatorMotorFront.getEncoder().getPosition(), elevatorMotorFront.getEncoder().getVelocity());
+        trapGoal.position = targetPosition;
+        }
+        break;
+      case IDLING:
+        //stay wherever we currently are, target position persists
+        break;
+      case MOVING_TO_POSITION:
+        if(trapGoal.position!=targetPosition){
+        trapState = new TrapezoidProfile.State(elevatorMotorFront.getEncoder().getPosition(), elevatorMotorFront.getEncoder().getVelocity());
+        trapGoal.position = targetPosition;
+        }
+        break;
+    }
+  }
+  
       
   /** Creates a new ElevatorSubsystem. */
   public ElevatorSubsystem() {
@@ -84,8 +130,6 @@ public class ElevatorSubsystem extends SubsystemBase {
     elevatorMotorFront.getEncoder().setPosition(0.0);
 
     elevatorFF = lowElevatorFF;
-
-    setDefaultCommand(hold());
   }
 
   public void periodic() {
@@ -117,6 +161,14 @@ public class ElevatorSubsystem extends SubsystemBase {
     else{
       elevatorFF=lowElevatorFF;
     }
+
+
+    systemState = handleStateTransitions();
+    ApplyStates();
+
+    previousWantedState = this.wantedState;
+
+    SetElevatorPositionTrap();
   }
     
   private SparkBaseConfig getEConfig() {
@@ -139,7 +191,7 @@ public class ElevatorSubsystem extends SubsystemBase {
 
     econfig.closedLoop
       .feedbackSensor(FeedbackSensor.kPrimaryEncoder)
-      .p(0.05)
+      .p(0.1)
       .i(0.0)
       .d(0.0)
     ;
@@ -202,31 +254,45 @@ public class ElevatorSubsystem extends SubsystemBase {
   }
 
 
-  public Command setElevatorPositionTrap(DoubleSupplier setpoint){
-    return startRun(
-      ()->{
-          trapState = new TrapezoidProfile.State(elevatorMotorFront.getEncoder().getPosition(), elevatorMotorFront.getEncoder().getVelocity());
-          trapGoal = new TrapezoidProfile.State(
-            MathUtil.clamp(setpoint.getAsDouble(), kLowerLimit, kUpperLimit),
-            0.0
-          );
-      },
-      ()->{
-        trapState = trapProfile.calculate(0.02, trapState, trapGoal);
+  // public Command setElevatorPositionTrap(DoubleSupplier setpoint){
+  //   return startRun(
+  //     ()->{
+  //         trapState = new TrapezoidProfile.State(elevatorMotorFront.getEncoder().getPosition(), elevatorMotorFront.getEncoder().getVelocity());
+  //         trapGoal = new TrapezoidProfile.State(
+  //           MathUtil.clamp(setpoint.getAsDouble(), kLowerLimit, kUpperLimit),
+  //           0.0
+  //         );
+  //     },
+  //     ()->{
+  //       trapState = trapProfile.calculate(0.02, trapState, trapGoal);
         
-        double ff = elevatorFF.calculate(trapState.velocity);
-        elevatorMotorFront.getClosedLoopController()
-          .setReference(
-            trapState.position,
-            ControlType.kPosition,             //this is wrong //fix
-            ClosedLoopSlot.kSlot0,
+  //       double ff = elevatorFF.calculate(trapState.velocity);
+  //       elevatorMotorFront.getClosedLoopController()
+  //         .setReference(
+  //           trapState.position,
+  //           ControlType.kPosition,             //this is wrong //fix
+  //           ClosedLoopSlot.kSlot0,
+  //           ff,
+  //           ArbFFUnits.kVoltage
+  //         )
+  //       ;
+  //     }
+  //   );
+  // }
+
+  public void SetElevatorPositionTrap(){
+    trapState = trapProfile.calculate(0.02, trapState, trapGoal);
+    double ff = elevatorFF.calculate(trapState.velocity);
+    elevatorMotorFront.getClosedLoopController()
+      .setReference(
+        trapState.position,
+         ControlType.kPosition,
+         ClosedLoopSlot.kSlot0,
             ff,
             ArbFFUnits.kVoltage
-          )
-        ;
-      }
-    );
+      );
   }
+
 
 
   public Command getSysIDRoutine(){
@@ -239,5 +305,18 @@ public class ElevatorSubsystem extends SubsystemBase {
       hold().withTimeout(1),
       routine.dynamic(Direction.kReverse).withTimeout(5)
     );
+  }
+
+  public boolean getArmCanDown(){
+    //intake height, not prepare to intake height, as it is simply the minimum possible height to rotate arm 360
+    return getHeight()>ElevatorConstants.intake && trapGoal.position>ElevatorConstants.intake;
+  }
+
+  public void SetWantedState(WantedState wantedState){
+    this.wantedState = wantedState;
+  }
+  public void SetWantedState(WantedState wantedState, double position){
+    this.wantedState = wantedState;
+    targetPosition = position;
   }
 }

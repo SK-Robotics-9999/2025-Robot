@@ -41,6 +41,7 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
+import frc.robot.Constants.ArmConstants;
 import frc.robot.Constants.MotorConstants;
 
 public class ArmSubsystem extends SubsystemBase {
@@ -62,7 +63,7 @@ public class ArmSubsystem extends SubsystemBase {
   ArmFeedforward armFF = new ArmFeedforward(0.03, 0.12, 0.0264);//i have no idea if the kv is good, but hope it works...
 
   private TrapezoidProfile.State trapState = new TrapezoidProfile.State();
-  private TrapezoidProfile.State trapGoal = new TrapezoidProfile.State();
+  private TrapezoidProfile.State trapGoal = new TrapezoidProfile.State(90.0, 0.0);
 
   private final double kUpperLimit = 200.0;
   private final double kLowerLimit = -95.0;
@@ -100,8 +101,6 @@ public class ArmSubsystem extends SubsystemBase {
       new InstantCommand(this::syncEncoders)
     );
 
-    // setDefaultCommand(hold());
-    setDefaultCommand(setArmAngleTrap(()->targetAngle));
   }
   
   
@@ -117,12 +116,15 @@ public class ArmSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("/arm/current", armMotor.getOutputCurrent()); 
 
     SmartDashboard.putNumber("/arm/targetAngle", targetAngle);
+    SmartDashboard.putNumber("/arm/trapGoalAngle", trapGoal.position);
+    SmartDashboard.putNumber("/arm/trapStateAngle", trapState.position);
 
     systemState = handleStateTransitions();
 
     ApplyStates();
     previousWantedState = this.wantedState;
 
+    setArmAngleTrap();
   }
 
   public SystemState handleStateTransitions(){
@@ -142,13 +144,20 @@ public class ArmSubsystem extends SubsystemBase {
   public void ApplyStates(){
     switch (systemState) {
       case HOMING:
-        targetAngle = 90.0;
+        targetAngle = 90.0;        
+        if(trapGoal.position!=targetAngle){
+          trapState = new TrapezoidProfile.State(armMotor.getEncoder().getPosition(), armMotor.getEncoder().getVelocity());
+          trapGoal.position = targetAngle;
+        }
         break;
       case IDLING:
         //targetAngle stays same
         break;
       case MOVING_TO_POSITION:
-        targetAngle = trapGoal.position;
+        if(trapGoal.position!=targetAngle){
+          trapState = new TrapezoidProfile.State(armMotor.getEncoder().getPosition(), armMotor.getEncoder().getVelocity());
+          trapGoal.position = targetAngle;
+        }  
         break;
     }
   }
@@ -245,27 +254,42 @@ public class ArmSubsystem extends SubsystemBase {
     
   }
 
-  public Command setArmAngleTrap(DoubleSupplier setpoint){
-    return startRun(
-      ()->{
-        trapState = new TrapezoidProfile.State(armMotor.getEncoder().getPosition(), armMotor.getEncoder().getVelocity());
-        trapGoal = new TrapezoidProfile.State(setpoint.getAsDouble(), 0.0);
-      }, 
-      ()->{
-        trapState = trapProfile.calculate(0.02, trapState, trapGoal); //assumes we follow along the trap well, in theory we should be returning our actual but its ok
+  // public Command setArmAngleTrap(DoubleSupplier setpoint){
+  //   return startRun(
+  //     ()->{
+  //       trapState = new TrapezoidProfile.State(armMotor.getEncoder().getPosition(), armMotor.getEncoder().getVelocity());
+  //       trapGoal = new TrapezoidProfile.State(setpoint.getAsDouble(), 0.0);
+  //     }, 
+  //     ()->{
+  //       trapState = trapProfile.calculate(0.02, trapState, trapGoal); //assumes we follow along the trap well, in theory we should be returning our actual but its ok
 
-        double ff = armFF.calculate(Radians.convertFrom(armMotor.getEncoder().getPosition(), Degrees), RadiansPerSecond.convertFrom(trapState.velocity, DegreesPerSecond));
-        armMotor.getClosedLoopController()
-          .setReference(
-            trapState.position,
-            ControlType.kPosition,
-            ClosedLoopSlot.kSlot0,
-            ff,
-            ArbFFUnits.kVoltage
-          )
-        ;
-      }
-    );
+  //       double ff = armFF.calculate(Radians.convertFrom(armMotor.getEncoder().getPosition(), Degrees), RadiansPerSecond.convertFrom(trapState.velocity, DegreesPerSecond));
+  //       armMotor.getClosedLoopController()
+  //         .setReference(
+  //           trapState.position,
+  //           ControlType.kPosition,
+  //           ClosedLoopSlot.kSlot0,
+  //           ff,
+  //           ArbFFUnits.kVoltage
+  //         )
+  //       ;
+  //     }
+  //   );
+  // }
+
+  public void setArmAngleTrap(){
+    trapState = trapProfile.calculate(0.02, trapState, trapGoal); //assumes we follow along the trap well, in theory we should be returning our actual but its ok
+
+    double ff = armFF.calculate(Radians.convertFrom(armMotor.getEncoder().getPosition(), Degrees), RadiansPerSecond.convertFrom(trapState.velocity, DegreesPerSecond));
+    armMotor.getClosedLoopController()
+      .setReference(
+        trapState.position,
+        ControlType.kPosition,
+        ClosedLoopSlot.kSlot0,
+        ff,
+        ArbFFUnits.kVoltage
+      )
+    ;
   }
 
 
@@ -280,13 +304,18 @@ public class ArmSubsystem extends SubsystemBase {
       routine.dynamic(Direction.kReverse).withTimeout(5)
     );
   }
+
+  public boolean getArmIsSafe(){
+    return getAngle()>ArmConstants.lowestAtZeroElevator;
+  } 
+
   public void SetWantedState(WantedState wantedState){
     this.wantedState = wantedState;
   }
-  public void SetWantedState(WantedState wantedState, int targetAngle){
+  public void SetWantedState(WantedState wantedState, double targetAngle){
     this.wantedState = wantedState;
     this.targetAngle = targetAngle;
   }
-  
+
 
 }

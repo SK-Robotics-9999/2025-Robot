@@ -53,7 +53,7 @@ public class IntakeSubsystem extends SubsystemBase {
     INTAKING
   }
 
-  private WantedState wantedState = WantedState.IDLE;
+  private WantedState wantedState = WantedState.HOME;
   private WantedState previousWantedState = WantedState.IDLE;
   private SystemState systemState = SystemState.IDLING;
 
@@ -88,12 +88,14 @@ public class IntakeSubsystem extends SubsystemBase {
     switch (systemState) {
       case HOMING:
         intaking = false;
-        break;
-      case IDLING:
-        //DONT CHANGE
+        PidToZero();
+        stopPassthrough();
+        case IDLING:
+        //nothing
         break;
       case INTAKING:
         intaking = true;
+        intakeStuff();
         break;
     }
   }
@@ -108,13 +110,10 @@ public class IntakeSubsystem extends SubsystemBase {
 
     SmartDashboard.putNumber("/intake/passthroughVelocity", passthroughLeft.getEncoder().getVelocity());
 
-    if(intaking){
-      IntakeStuff();
-    }
-    else{
-      PidToZero();
-      // pivotMotor.setVoltage(11.0);
-    }
+    systemState = handleStateTransitions();
+    ApplyStates();
+
+    previousWantedState = wantedState;
   }
 
   public SparkBaseConfig rollerConfig(){
@@ -204,7 +203,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
     }
 
-  public void IntakeStuff(){
+  public void intakeStuff(){
     if(pivotMotor.getAbsoluteEncoder().getPosition()>130.0){
       pivotMotor.setVoltage(-0.5);
       rollerMotor.setVoltage(0);
@@ -224,6 +223,14 @@ public class IntakeSubsystem extends SubsystemBase {
     passthroughLeft.setVoltage(0);
     passthroughRight.setVoltage(0);
 
+  }
+
+  public void SetWantedState(WantedState wantedState){
+    this.wantedState = wantedState;
+  }
+  //dont work
+  public boolean hasCoral(){
+    return beambreak.get();
   }
 
 

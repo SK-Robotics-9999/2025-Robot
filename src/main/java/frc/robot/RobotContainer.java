@@ -12,6 +12,7 @@ import frc.robot.subsystems.ArmSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.SuctionSubsystem;
+import frc.robot.subsystems.SuperStructure;
 import frc.robot.subsystems.SwerveSubsystem;
 
 
@@ -24,10 +25,11 @@ import frc.robot.subsystems.SwerveSubsystem;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
-  ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
   ArmSubsystem armSubsystem = new ArmSubsystem();
+  ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(armSubsystem);
   IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
   SuctionSubsystem suctionSubsystem = new SuctionSubsystem();
+  SuperStructure superStructure = new SuperStructure(swerveSubsystem, intakeSubsystem, elevatorSubsystem, armSubsystem, suctionSubsystem);
 
   CommandXboxController driver = new CommandXboxController(0);
 
@@ -67,7 +69,9 @@ public class RobotContainer {
     //   .whileFalse(new InstantCommand(()->intakeSubsystem.setIntaking(false)))
     // ;
 
-    driver.b().onTrue(new InstantCommand(()->suctionSubsystem.releaseSolenoid(!suctionSubsystem.getSolenoidReleased())));
+    
+    // driver.a().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.HOME)));
+    // driver.b().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PREPARE_TO_INTAKE)));
   }
 
   /**
