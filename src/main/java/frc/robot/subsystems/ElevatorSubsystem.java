@@ -307,9 +307,10 @@ public class ElevatorSubsystem extends SubsystemBase {
     );
   }
 
+  //doesn't work
   public boolean getArmCanDown(){
     //intake height, not prepare to intake height, as it is simply the minimum possible height to rotate arm 360
-    return getHeight()>ElevatorConstants.intake && trapGoal.position>ElevatorConstants.intake;
+    return getHeight()>ElevatorConstants.intake-6.0 && trapGoal.position>ElevatorConstants.intake;
   }
 
   public void SetWantedState(WantedState wantedState){

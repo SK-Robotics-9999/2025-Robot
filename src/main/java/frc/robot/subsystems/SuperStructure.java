@@ -33,7 +33,8 @@ public class SuperStructure extends SubsystemBase {
     HOME,
     IDLE,
     PREPARE_TO_INTAKE,
-    CORAL_GROUND_INTAKE
+    CORAL_GROUND_INTAKE,
+    CORAL_GROUND_RECIEVE
   }
 
   private WantedSuperState wantedSuperState = WantedSuperState.IDLE;
@@ -85,7 +86,8 @@ public class SuperStructure extends SubsystemBase {
         else{
           return CurrentSuperState.IDLE;
         }
-
+      case CORAL_GROUND_RECIEVE:
+        return CurrentSuperState.CORAL_GROUND_RECIEVE;
 
     }
     return CurrentSuperState.IDLE;
@@ -119,6 +121,9 @@ public class SuperStructure extends SubsystemBase {
       case CORAL_GROUND_INTAKE:
         coralGroundIntake();
         break;
+      case CORAL_GROUND_RECIEVE:
+        coralGroundReceive();
+        break;
     }
   }
 
@@ -136,21 +141,26 @@ public class SuperStructure extends SubsystemBase {
     if (!armNeedsToWait){
       armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     }
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
   }
 
-  private void coralGroundReceive(){
-    armSubsystem.SetWantedState(ArmSubsystem.WantedState.IDLE);
-    // elevator.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, Constants.ElevatorConstants.Intake);
-  }
-
+  
   private void coralGroundIntake(){
     //Add all the stuff for other subsystem states
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.IDLE);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.IDLE);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.INTAKE);
   }
+  
+  private void coralGroundReceive(){
+    if (!armNeedsToWait){
+      armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
+    }
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, Constants.ElevatorConstants.intake);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.POST_INTAKE);
 
-
+  }
+  
   public void SetWantedState(SuperStructure.WantedSuperState wantedSuperState){
     this.wantedSuperState = wantedSuperState;
   }

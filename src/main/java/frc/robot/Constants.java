@@ -54,7 +54,7 @@ public final class Constants {
   
   public static class ArmConstants{
     public static final double intakeAngle = -90;
-    public static final double lowestAtZeroElevator = -20;
+    public static final double lowestAtZeroElevator = -35;
     //THESE ALL NEED TO BE CHANGED
     public static final double scoreL1 = 0;
     public static final double scoreL2 = 5;
@@ -64,8 +64,8 @@ public final class Constants {
   }
 
   public static class ElevatorConstants{
-    public static final double preIntake = 20.0;
-    public static final double intake = 15.0;
+    public static final double preIntake = 16.0;
+    public static final double intake = 13.0;
   }
 
 }

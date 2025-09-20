@@ -40,17 +40,20 @@ public class IntakeSubsystem extends SubsystemBase {
   private boolean intaking = false;
 
   public double pidTargetIntake = 157.0; // close to absConversionFactor
+  public double pidTargetSafe = 142.0; //out of reach from pickup
 
   public enum WantedState{
     HOME,
     IDLE,
-    INTAKE
+    INTAKE,
+    POST_INTAKE,
   }
 
   public enum SystemState{
     HOMING,
     IDLING,
-    INTAKING
+    INTAKING,
+    POST_INTAKING
   }
 
   private WantedState wantedState = WantedState.HOME;
@@ -63,11 +66,11 @@ public class IntakeSubsystem extends SubsystemBase {
     passthroughLeft.configure(passthroughConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
     passthroughRight.configure(passthroughConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
-    new Trigger(()->intaking)
-      .onTrue(
-        new RunCommand(this::passStuff)
-        .until(()->!beambreak.get()).finallyDo((e)->{stopPassthrough();})
-      );
+    // new Trigger(()->intaking)
+    //   .onTrue(
+    //     new RunCommand(this::passStuff)
+    //     .until(()->!beambreak.get()).finallyDo((e)->{stopPassthrough();})
+    //   );
   }
 
   public SystemState handleStateTransitions(){
@@ -80,6 +83,8 @@ public class IntakeSubsystem extends SubsystemBase {
         return SystemState.IDLING;
       case INTAKE:
         return SystemState.INTAKING;
+      case POST_INTAKE:
+        return SystemState.POST_INTAKING;
     }
     return SystemState.IDLING;
   }
@@ -96,6 +101,10 @@ public class IntakeSubsystem extends SubsystemBase {
       case INTAKING:
         intaking = true;
         intakeStuff();
+        break;
+      case POST_INTAKING:
+        PidToSafe();
+        stopPassthrough();
         break;
     }
   }
@@ -202,15 +211,38 @@ public class IntakeSubsystem extends SubsystemBase {
 
     }
     }
+    public void PidToSafe(){
+      rollerMotor.setVoltage(0);
+      if(pivotMotor.getAbsoluteEncoder().getPosition()<135){
+        pivotMotor.getClosedLoopController()
+          .setReference(
+            pidTargetSafe,
+            ControlType.kPosition,
+            ClosedLoopSlot.kSlot0
+          );
+          
+      }
+      else{
+        pivotMotor.getClosedLoopController()
+          .setReference(
+            pidTargetSafe,
+            ControlType.kPosition,
+            ClosedLoopSlot.kSlot1
+          );
+  
+      }
+      }
 
   public void intakeStuff(){
     if(pivotMotor.getAbsoluteEncoder().getPosition()>130.0){
       pivotMotor.setVoltage(-0.5);
       rollerMotor.setVoltage(0);
+      stopPassthrough();
     }
     else{
       pivotMotor.setVoltage(0);
       rollerMotor.setVoltage(-8.5);
+      passStuff();
     }
   }
 

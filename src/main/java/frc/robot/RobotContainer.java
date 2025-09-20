@@ -26,7 +26,7 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
   ArmSubsystem armSubsystem = new ArmSubsystem();
-  ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem(armSubsystem);
+  ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
   IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
   SuctionSubsystem suctionSubsystem = new SuctionSubsystem();
   SuperStructure superStructure = new SuperStructure(swerveSubsystem, intakeSubsystem, elevatorSubsystem, armSubsystem, suctionSubsystem);
@@ -70,8 +70,10 @@ public class RobotContainer {
     // ;
 
     
-    // driver.a().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.HOME)));
-    // driver.b().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PREPARE_TO_INTAKE)));
+    driver.a().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.HOME)));
+    driver.b().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PREPARE_TO_INTAKE)));
+    driver.x().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.CORAL_GROUND_INTAKE)));
+    driver.y().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.CORAL_GROUND_RECIEVE)));
   }
 
   /**
