@@ -17,6 +17,7 @@ public class SuperStructure extends SubsystemBase {
   private ElevatorSubsystem elevatorSubsystem;
   private ArmSubsystem armSubsystem;
   private SuctionSubsystem suctionSubsystem;
+  private boolean leftReef = false;
 
 
 
@@ -41,7 +42,8 @@ public class SuperStructure extends SubsystemBase {
     MOVE_TO_L4_AUTO,
     MOVE_TO_L3_AUTO,
     MOVE_TO_L2_AUTO,
-    MOVE_TO_L1_AUTO
+    MOVE_TO_L1_AUTO,
+    DRIVE_TO_BRANCH
 
 
   }
@@ -63,10 +65,7 @@ public class SuperStructure extends SubsystemBase {
     PLACE_L2,
     PLACE_L1,
     PLACE_BARGE,
-    MOVE_TO_L4_AUTO,
-    MOVE_TO_L3_AUTO,
-    MOVE_TO_L2_AUTO,
-    MOVE_TO_L1_AUTO
+    DRIVE_TO_BRANCH
   }
 
   private WantedSuperState wantedSuperState = WantedSuperState.IDLE;
@@ -170,6 +169,8 @@ public class SuperStructure extends SubsystemBase {
           else{
             return CurrentSuperState.IDLE;
           }
+      case DRIVE_TO_BRANCH:
+        return CurrentSuperState.DRIVE_TO_BRANCH;
     }
     return CurrentSuperState.IDLE;
 }
@@ -237,6 +238,9 @@ public class SuperStructure extends SubsystemBase {
         break;
       case PLACE_BARGE:
         placeAtBarge();
+        break;
+      case DRIVE_TO_BRANCH:
+        driveToReefBranch();
         break;
     }
   }
@@ -323,6 +327,17 @@ public class SuperStructure extends SubsystemBase {
     //keep pressure
   }
 
+  private void driveToReefBranch(){
+    currentPose = swerveSubsystem.getPose();
+    if(leftReef){
+      swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(currentPose));
+    }
+    else{
+      swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(currentPose));
+    }
+    //keep the rest as idle or smth
+  }
+
 
   private void placeAtL4(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.scoreL4);
@@ -360,6 +375,10 @@ public class SuperStructure extends SubsystemBase {
   }
 
   public void SetWantedState(SuperStructure.WantedSuperState wantedSuperState){
+    this.wantedSuperState = wantedSuperState;
+  }
+  public void SetWantedState(SuperStructure.WantedSuperState wantedSuperState, boolean leftReef){
+    this.leftReef = leftReef;
     this.wantedSuperState = wantedSuperState;
   }
 
