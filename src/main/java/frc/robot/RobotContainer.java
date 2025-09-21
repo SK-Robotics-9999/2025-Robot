@@ -70,10 +70,18 @@ public class RobotContainer {
     // ;
 
     
-    driver.a().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.HOME)));
-    driver.b().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PREPARE_TO_INTAKE)));
-    driver.x().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.CORAL_GROUND_INTAKE)));
-    driver.y().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.CORAL_GROUND_RECIEVE)));
+    // driver.a().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.HOME)));
+    // driver.b().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PREPARE_TO_INTAKE)));
+    // driver.x().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.CORAL_GROUND_INTAKE)));
+    // driver.y().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.CORAL_GROUND_RECIEVE)));
+    // driver.povDown().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PREPARE_TO_PLACE)));
+    // driver.povUp().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.MOVE_TO_L4)));
+    // driver.povLeft().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.MOVE_TO_L2)));
+    // driver.povRight().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.MOVE_TO_L1)));
+    // driver.rightBumper().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PLACE_L4)));
+    // driver.leftBumper().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PLACE_L2)));
+    // driver.leftTrigger().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PLACE_L1)));
+    
   }
 
   /**

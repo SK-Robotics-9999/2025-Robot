@@ -43,6 +43,23 @@ public class SwerveSubsystem extends SubsystemBase {
 
   SwerveDrive swerveDrive;
 
+  public enum WantedState{
+    DRIVE_TO_POINT,
+    IDLE,
+    TELEOP_DRIVE
+  }
+
+  public enum SystemState{
+    DRIVING_TO_POINT,
+    IDLING,
+    TELEOP_DRIVING
+  }
+
+  private WantedState wantedState;
+  private SystemState systemState;
+  private WantedState previousWantedState;
+  private Pose2d targetPose;
+
   //2.24-1.88
   public static final SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(0.1, 2.75, 0.35);
 
@@ -74,7 +91,38 @@ public class SwerveSubsystem extends SubsystemBase {
     //SmartDashboard.putBoolean("Navx/Connected", isGyroConnected());
     //SmartDashboard.putBoolean("Navx/Callibrating", isGyroCallibrating());
 
+    systemState = handleStateTransitions();
+    ApplyStates();
+
     }
+
+
+    public SystemState handleStateTransitions(){
+      switch (wantedState){
+        case TELEOP_DRIVE:
+          if(previousWantedState != WantedState.TELEOP_DRIVE){
+              return SystemState.TELEOP_DRIVING;
+          }
+        case IDLE:
+          return SystemState.IDLING;
+        case DRIVE_TO_POINT:
+          return SystemState.DRIVING_TO_POINT;
+      }
+      return SystemState.IDLING;
+    }
+
+    public void ApplyStates(){
+      switch (systemState) {
+        case IDLING:
+          //change nothing
+          break;
+        case DRIVING_TO_POINT:
+          pidToPoseFast(targetPose);
+          break;
+        case TELEOP_DRIVING:
+          //TELEOP DRIVE
+          break;
+      }}
     
     //idk if this works
     public void resetGyro(){
@@ -310,6 +358,14 @@ public class SwerveSubsystem extends SubsystemBase {
     );
   }
 
+  public void SetWantedState(WantedState wantedState){
+    this.wantedState = wantedState;
+  }
+
+  public void SetWantedState(WantedState wantedState, Pose2d targetPose){
+    this.targetPose = targetPose;
+    this.wantedState = wantedState;
+  }
   
 
 
