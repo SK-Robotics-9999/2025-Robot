@@ -31,7 +31,7 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
-public class Vision extends SubsystemBase {
+public class VisionSubsystem extends SubsystemBase {
   /** Creates a new Vision. */
   
   SwerveSubsystem swerve ; 
@@ -57,7 +57,7 @@ public class Vision extends SubsystemBase {
   Field2d visionField = new Field2d();
 
   /** Creates a new Vision. */
-  public Vision(SwerveSubsystem swerve) {
+  public VisionSubsystem(SwerveSubsystem swerve) {
     this.swerve = swerve;
     SmartDashboard.putData("visionfield", visionField);
       
