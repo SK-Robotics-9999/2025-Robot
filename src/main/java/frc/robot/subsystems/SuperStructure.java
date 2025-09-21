@@ -24,7 +24,12 @@ public class SuperStructure extends SubsystemBase {
     IDLE,
     PREPARE_TO_INTAKE,
     CORAL_GROUND_INTAKE,
-    CORAL_GROUND_RECIEVE
+    CORAL_GROUND_RECIEVE,
+    PREPARE_TO_PLACE,
+    MOVE_TO_L4,
+    MOVE_TO_L3,
+    MOVE_TO_L2,
+    MOVE_TO_L1
 
 
   }
@@ -34,7 +39,12 @@ public class SuperStructure extends SubsystemBase {
     IDLE,
     PREPARE_TO_INTAKE,
     CORAL_GROUND_INTAKE,
-    CORAL_GROUND_RECIEVE
+    CORAL_GROUND_RECIEVE,
+    PREPARE_TO_PLACE,
+    MOVE_TO_L4,
+    MOVE_TO_L3,
+    MOVE_TO_L2,
+    MOVE_TO_L1
   }
 
   private WantedSuperState wantedSuperState = WantedSuperState.IDLE;
@@ -88,6 +98,16 @@ public class SuperStructure extends SubsystemBase {
         }
       case CORAL_GROUND_RECIEVE:
         return CurrentSuperState.CORAL_GROUND_RECIEVE;
+      case PREPARE_TO_PLACE:
+        return CurrentSuperState.PREPARE_TO_PLACE;
+      case MOVE_TO_L4:
+        return CurrentSuperState.MOVE_TO_L4;
+      case MOVE_TO_L3:
+        return CurrentSuperState.MOVE_TO_L3;
+      case MOVE_TO_L2:
+        return CurrentSuperState.MOVE_TO_L2;
+      case MOVE_TO_L1:
+        return CurrentSuperState.MOVE_TO_L1;
 
     }
     return CurrentSuperState.IDLE;
@@ -124,6 +144,21 @@ public class SuperStructure extends SubsystemBase {
       case CORAL_GROUND_RECIEVE:
         coralGroundReceive();
         break;
+      case PREPARE_TO_PLACE:
+        prepareToPlace();
+        break;
+      case MOVE_TO_L4:
+        moveToLevel(ArmConstants.moveL4, ElevatorConstants.l4);
+        break;
+      case MOVE_TO_L3:
+        moveToLevel(ArmConstants.moveL3, ElevatorConstants.l3);
+        break;
+      case MOVE_TO_L2:
+        moveToLevel(ArmConstants.moveL2, ElevatorConstants.l2);
+        break;
+      case MOVE_TO_L1:
+        moveToLevel(ArmConstants.moveL1, ElevatorConstants.l1);
+        break;
     }
   }
 
@@ -156,9 +191,21 @@ public class SuperStructure extends SubsystemBase {
     if (!armNeedsToWait){
       armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     }
-    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, Constants.ElevatorConstants.intake);
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.intake);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.POST_INTAKE);
 
+  }
+
+  private void prepareToPlace(){
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.postIntake);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+  }
+
+  private void moveToLevel(double armAngle, double elevatorHeight){
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, armAngle);
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, elevatorHeight);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
   }
   
   public void SetWantedState(SuperStructure.WantedSuperState wantedSuperState){

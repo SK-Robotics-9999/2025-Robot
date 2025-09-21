@@ -56,6 +56,10 @@ public final class Constants {
     public static final double intakeAngle = -90;
     public static final double lowestAtZeroElevator = -35;
     //THESE ALL NEED TO BE CHANGED
+    public static final double moveL1 = 0;
+    public static final double moveL2 = 5;
+    public static final double moveL3 = 10;
+    public static final double moveL4 = 20; 
     public static final double scoreL1 = 0;
     public static final double scoreL2 = 5;
     public static final double scoreL3 = 10;
@@ -66,6 +70,11 @@ public final class Constants {
   public static class ElevatorConstants{
     public static final double preIntake = 16.0;
     public static final double intake = 13.0;
+    public static final double postIntake = 20.0;
+    public static final double l4 = 40.0;
+    public static final double l3 = 30.0;
+    public static final double l2 = 20.0;
+    public static final double l1 = 20.0;
   }
 
 }
