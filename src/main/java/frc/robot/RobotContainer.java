@@ -49,13 +49,13 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    // swerveSubsystem.setDefaultCommand(swerveSubsystem.driveCommandAllianceManaged(
-    //   ()->-driver.getLeftY(),
-    //   ()->-driver.getLeftX(),
-    //   ()->-driver.getRightX()
-    // ));
+     swerveSubsystem.setDefaultCommand(swerveSubsystem.driveCommandAllianceManaged(
+       ()->-driver.getLeftY(),
+       ()->-driver.getLeftX(),
+       ()->-driver.getRightX()
+     ));
 
-    // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
+     driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
 
     // driver.b().whileTrue(elevatorSubsystem.setElevatorPositionTrap(()->40));
     // driver.y().whileTrue(elevatorSubsystem.setElevatorPositionTrap(()->20));

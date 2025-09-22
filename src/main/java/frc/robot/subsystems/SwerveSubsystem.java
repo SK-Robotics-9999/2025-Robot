@@ -55,9 +55,9 @@ public class SwerveSubsystem extends SubsystemBase {
     TELEOP_DRIVING
   }
 
-  private WantedState wantedState;
-  private SystemState systemState;
-  private WantedState previousWantedState;
+  private WantedState wantedState = WantedState.IDLE;
+  private SystemState systemState = SystemState.IDLING;
+  private WantedState previousWantedState = WantedState.IDLE;
   private Pose2d targetPose;
 
   //2.24-1.88
@@ -126,8 +126,7 @@ public class SwerveSubsystem extends SubsystemBase {
     
     //idk if this works
     public void resetGyro(){
-      AHRS navx = (AHRS)swerveDrive.getGyro().getIMU();
-      navx.reset();
+      swerveDrive.zeroGyro();
     }
 
   public Command driveCommandAllianceManaged(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
