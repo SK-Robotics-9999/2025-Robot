@@ -5,6 +5,7 @@
 package frc.robot;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -37,12 +38,6 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
-    swerveSubsystem.setWantedState(
-      SwerveSubsystem.WantedState.TELEOP_DRIVE, 
-      ()->-driver.getLeftY(),
-      ()->-driver.getLeftX(),
-      ()->-driver.getRightX()
-    );
     // Configure the trigger bindings
     configureBindings();
 
@@ -58,12 +53,13 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    // swerveSubsystem.setDefaultCommand(swerveSubsystem.driveCommandAllianceManaged(
-    //   ()->-driver.getLeftY(),
-    //   ()->-driver.getLeftX(),
-    //   ()->-driver.getRightX()
-    // ));
-
+    swerveSubsystem.setWantedState(
+      SwerveSubsystem.WantedState.TELEOP_DRIVE, 
+      ()->-driver.getLeftY(),
+      ()->-driver.getLeftX(),
+      ()->-driver.getRightX()
+    );
+    
     // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
 
     // driver.b().whileTrue(elevatorSubsystem.setElevatorPositionTrap(()->40));
@@ -93,7 +89,7 @@ public class RobotContainer {
     
     driver.rightTrigger().whileTrue( //is it actually a whileTrue
       new StartEndCommand(
-        ()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, new Pose2d()), 
+        ()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, new Pose2d(1,1, new Rotation2d())), 
         ()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE)
       )
     );

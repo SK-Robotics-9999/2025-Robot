@@ -15,6 +15,7 @@ import java.util.function.DoubleSupplier;
 import com.studica.frc.AHRS;
 
 import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -40,6 +41,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
   
   double maximumSpeed = 5.033;
+  double maxVelocityForPID = 3.0; //meters
+  double maxRotationalVelocityForPID = 4.0;
 
   SwerveDrive swerveDrive;
 
@@ -60,6 +63,12 @@ public class SwerveSubsystem extends SubsystemBase {
   private WantedState previousWantedState;
   private Pose2d targetPose;
 
+
+  private final PIDController autoCont = new PIDController(3, 0, 0.1);
+  private final PIDController teleOpCont = new PIDController(3, 0, 0.1);
+
+  private double staticFrictionConstant = 0.02;
+
   DoubleSupplier translationX = ()->0.0;
   DoubleSupplier translationY = ()->0.0;
   DoubleSupplier angularRotationX = ()->0.0;
@@ -78,7 +87,10 @@ public class SwerveSubsystem extends SubsystemBase {
         {
           throw new RuntimeException(e);
 
-  }}
+  }
+
+  swerveDrive.resetOdometry(new Pose2d(1, 1, new Rotation2d()));
+}
 
   @Override
   public void periodic() {
@@ -117,7 +129,7 @@ public class SwerveSubsystem extends SubsystemBase {
         //change nothing
         break;
       case DRIVING_TO_POINT:
-        pidToPoseFast(targetPose);
+        pidToPose(targetPose);
         break;
       case TELEOP_DRIVING:
         //TELEOP DRIVE
@@ -220,24 +232,42 @@ public class SwerveSubsystem extends SubsystemBase {
 
 
 
-  private void pidToPoseFast(Pose2d pose){
-    final double transltionP = 3.0*1.2;
-    final double thetaP = 2.0*4*1.2 ;
+  private void pidToPose(Pose2d pose){
+    var frictionConstant = 0.0;
+  
+    var delta = pose.relativeTo(getPose());
+    var linearDistance = delta.getTranslation().getNorm();
 
-    double clamp = 2.0;
+    if(linearDistance > Inches.of(0.5).in(Meters)){
+      frictionConstant = staticFrictionConstant*maximumSpeed;
+    }
 
-    Pose2d delta = pose.relativeTo(swerveDrive.getPose());
+    Rotation2d angle = delta.getTranslation().getAngle();
+    double velocity = 0.0;
+
+    if(DriverStation.isAutonomous()){
+      velocity =  Math.min(
+        Math.abs(autoCont.calculate(linearDistance, 0)) + frictionConstant,
+        maxVelocityForPID);
+    }
+    else{
+      velocity =  Math.min(
+        Math.abs(teleOpCont.calculate(linearDistance, 0)) + frictionConstant,
+        maxVelocityForPID);
+    }
+
+    double xcomponent = angle.getCos()*velocity;
+    double ycomponent = angle.getSin()*velocity;
+    double rotationalComponent = Math.min(delta.getRotation().getRadians()*4.0,
+      maxRotationalVelocityForPID);
 
     swerveDrive.setChassisSpeeds(new ChassisSpeeds(
-      MathUtil.clamp(delta.getX()*transltionP,-clamp, clamp),
-      MathUtil.clamp(delta.getY()*transltionP,-clamp,clamp),
-      delta.getRotation().getRadians()*thetaP
+      xcomponent,
+      ycomponent,
+      rotationalComponent
     ));
 
     odometryField.getObject("pidtarget").setPose(pose);
-    SmartDashboard.putNumber("swerve/pid/deltax", pose.getX());
-    SmartDashboard.putNumber("swerve/pid/deltay", pose.getY());
-
   }
 
   public void SetWantedState(WantedState wantedState){
