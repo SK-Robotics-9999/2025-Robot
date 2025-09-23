@@ -12,7 +12,6 @@ import frc.robot.FieldNavigation;
 
 public class SuperStructure extends SubsystemBase {
   /** Creates a new SuperStructure. */ 
-  private SwerveSubsystem swerveSubsystem;
   private IntakeSubsystem intakeSubsystem;
   private ElevatorSubsystem elevatorSubsystem;
   private ArmSubsystem armSubsystem;
@@ -25,9 +24,9 @@ public class SuperStructure extends SubsystemBase {
   public enum WantedSuperState{
     HOME,
     IDLE,
-    PREPARE_TO_INTAKE,
+    PREPARE_TO_RECEIVE,
     CORAL_GROUND_INTAKE,
-    CORAL_GROUND_RECIEVE,
+    CORAL_GROUND_RECEIVE,
     PREPARE_TO_PLACE,
     MOVE_TO_L4,
     MOVE_TO_L3,
@@ -46,7 +45,7 @@ public class SuperStructure extends SubsystemBase {
     IDLE,
     PREPARE_TO_INTAKE,
     CORAL_GROUND_INTAKE,
-    CORAL_GROUND_RECIEVE,
+    CORAL_GROUND_RECEIVE,
     PREPARE_TO_PLACE,
     MOVE_TO_L4,
     MOVE_TO_L3,
@@ -75,8 +74,7 @@ public class SuperStructure extends SubsystemBase {
 
 
   
-  public SuperStructure(SwerveSubsystem swerveSubsystem, IntakeSubsystem intakeSubsystem, ElevatorSubsystem elevatorSubsystem, ArmSubsystem armSubsystem, SuctionSubsystem suck) {
-    this.swerveSubsystem = swerveSubsystem;
+  public SuperStructure(IntakeSubsystem intakeSubsystem, ElevatorSubsystem elevatorSubsystem, ArmSubsystem armSubsystem, SuctionSubsystem suck) {
     this.intakeSubsystem = intakeSubsystem;
     this.elevatorSubsystem = elevatorSubsystem;
     this.armSubsystem = armSubsystem;
@@ -103,7 +101,7 @@ public class SuperStructure extends SubsystemBase {
         return currentSuperState = CurrentSuperState.IDLE;
       case HOME:
         return CurrentSuperState.HOME;
-      case PREPARE_TO_INTAKE:
+      case PREPARE_TO_RECEIVE:
         return CurrentSuperState.PREPARE_TO_INTAKE;
       case CORAL_GROUND_INTAKE:
         if (previousSuperState==CurrentSuperState.PREPARE_TO_INTAKE){
@@ -112,8 +110,8 @@ public class SuperStructure extends SubsystemBase {
         else{
           return CurrentSuperState.IDLE;
         }
-      case CORAL_GROUND_RECIEVE:
-        return CurrentSuperState.CORAL_GROUND_RECIEVE;
+      case CORAL_GROUND_RECEIVE:
+        return CurrentSuperState.CORAL_GROUND_RECEIVE;
       case PREPARE_TO_PLACE:
         return CurrentSuperState.PREPARE_TO_PLACE;
       case MOVE_TO_L4:
@@ -193,7 +191,7 @@ public class SuperStructure extends SubsystemBase {
       case CORAL_GROUND_INTAKE:
         coralGroundIntake();
         break;
-      case CORAL_GROUND_RECIEVE:
+      case CORAL_GROUND_RECEIVE:
         coralGroundReceive();
         break;
       case PREPARE_TO_PLACE:
@@ -289,8 +287,6 @@ public class SuperStructure extends SubsystemBase {
   }
 
   private void moveToL2(){
-    currentPose = swerveSubsystem.getPose();
-    swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(currentPose));
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL2);
     //if() need safety
     if(armSubsystem.getAngle()>ArmConstants.safeL2){
@@ -313,18 +309,6 @@ public class SuperStructure extends SubsystemBase {
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
     //keep pressure
   }
-
-  private void driveToReefBranch(){
-    currentPose = swerveSubsystem.getPose();
-    if(leftReef){
-      swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(currentPose));
-    }
-    else{
-      swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(currentPose));
-    }
-    //keep the rest as idle or smth
-  }
-
 
   private void placeAtL4(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.scoreL4);
@@ -359,6 +343,10 @@ public class SuperStructure extends SubsystemBase {
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.barge);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
     //release pressure
+  }
+  
+  public CurrentSuperState getCurrentSuperState(){
+    return currentSuperState;
   }
 
   public void SetWantedState(SuperStructure.WantedSuperState wantedSuperState){

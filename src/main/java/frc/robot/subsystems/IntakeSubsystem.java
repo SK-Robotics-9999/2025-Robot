@@ -260,9 +260,9 @@ public class IntakeSubsystem extends SubsystemBase {
   public void SetWantedState(WantedState wantedState){
     this.wantedState = wantedState;
   }
-  //dont work
+
   public boolean hasCoral(){
-    return beambreak.get();
+    return !beambreak.get();
   }
 
 

@@ -26,6 +26,7 @@ import com.revrobotics.spark.config.SparkBaseConfig;
 import com.revrobotics.spark.config.SparkBaseConfig.IdleMode;
 import com.revrobotics.spark.config.SparkMaxConfig;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.ArmFeedforward;
 import edu.wpi.first.math.trajectory.TrapezoidProfile;
 import edu.wpi.first.units.measure.Voltage;
@@ -118,6 +119,7 @@ public class ArmSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("/arm/targetAngle", targetAngle);
     SmartDashboard.putNumber("/arm/trapGoalAngle", trapGoal.position);
     SmartDashboard.putNumber("/arm/trapStateAngle", trapState.position);
+    SmartDashboard.putBoolean("/arm/onTarget", getOnTarget());
 
     systemState = handleStateTransitions();
 
@@ -305,9 +307,17 @@ public class ArmSubsystem extends SubsystemBase {
     );
   }
 
+  public boolean getOnTarget(){
+    return MathUtil.isNear(trapGoal.position, getAngle(), 4);
+  }
+
   public boolean getArmIsSafe(){
     return getAngle()>ArmConstants.lowestAtZeroElevator;
   } 
+
+  public double getTarget(){
+    return trapGoal.position;
+  }
 
   public void SetWantedState(WantedState wantedState){
     this.wantedState = wantedState;
