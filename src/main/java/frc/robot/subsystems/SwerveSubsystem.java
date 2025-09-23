@@ -55,7 +55,7 @@ public class SwerveSubsystem extends SubsystemBase {
     TELEOP_DRIVING
   }
 
-  private WantedState wantedState = WantedState.TELEOP_DRIVE;
+  private WantedState wantedState = WantedState.IDLE;
   private SystemState systemState = SystemState.IDLING;
   private WantedState previousWantedState;
   private Pose2d targetPose;
@@ -250,6 +250,7 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public void setWantedState(WantedState wantedState, DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
+    this.wantedState = wantedState;
     this.translationX = translationX;
     this.translationY = translationY;
     this.angularRotationX = angularRotationX;
