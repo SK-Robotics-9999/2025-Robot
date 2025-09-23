@@ -43,22 +43,26 @@ public class SwerveSubsystem extends SubsystemBase {
 
   SwerveDrive swerveDrive;
 
-  public enum WantedState{
+  public static enum WantedState{
     DRIVE_TO_POINT,
     IDLE,
     TELEOP_DRIVE
   }
 
-  public enum SystemState{
+  public static enum SystemState{
     DRIVING_TO_POINT,
     IDLING,
     TELEOP_DRIVING
   }
 
-  private WantedState wantedState;
-  private SystemState systemState;
+  private WantedState wantedState = WantedState.TELEOP_DRIVE;
+  private SystemState systemState = SystemState.IDLING;
   private WantedState previousWantedState;
   private Pose2d targetPose;
+
+  DoubleSupplier translationX = ()->0.0;
+  DoubleSupplier translationY = ()->0.0;
+  DoubleSupplier angularRotationX = ()->0.0;
 
   //2.24-1.88
   public static final SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(0.1, 2.75, 0.35);
@@ -89,53 +93,46 @@ public class SwerveSubsystem extends SubsystemBase {
     SmartDashboard.putNumber("swerve/y", swerveDrive.getPose().getY());
     
     //SmartDashboard.putBoolean("Navx/Connected", isGyroConnected());
-    //SmartDashboard.putBoolean("Navx/Callibrating", isGyroCallibrating());
 
     systemState = handleStateTransitions();
     ApplyStates();
 
+  }
+
+  public SystemState handleStateTransitions(){
+    switch (wantedState){
+      case TELEOP_DRIVE:
+        return SystemState.TELEOP_DRIVING;
+      case IDLE:
+        return SystemState.IDLING;
+      case DRIVE_TO_POINT:
+        return SystemState.DRIVING_TO_POINT;
     }
+    return SystemState.IDLING;
+  }
 
-
-    public SystemState handleStateTransitions(){
-      switch (wantedState){
-        case TELEOP_DRIVE:
-          if(previousWantedState != WantedState.TELEOP_DRIVE){
-              return SystemState.TELEOP_DRIVING;
-          }
-        case IDLE:
-          return SystemState.IDLING;
-        case DRIVE_TO_POINT:
-          return SystemState.DRIVING_TO_POINT;
-      }
-      return SystemState.IDLING;
-    }
-
-    public void ApplyStates(){
-      switch (systemState) {
-        case IDLING:
-          //change nothing
-          break;
-        case DRIVING_TO_POINT:
-          pidToPoseFast(targetPose);
-          break;
-        case TELEOP_DRIVING:
-          //TELEOP DRIVE
-          break;
-      }}
+  public void ApplyStates(){
+    switch (systemState) {
+      case IDLING:
+        //change nothing
+        break;
+      case DRIVING_TO_POINT:
+        pidToPoseFast(targetPose);
+        break;
+      case TELEOP_DRIVING:
+        //TELEOP DRIVE
+        driveAllianceManaged(translationX, translationY, angularRotationX);
+        break;
+    }}
     
-    //idk if this works
-    public void resetGyro(){
-      AHRS navx = (AHRS)swerveDrive.getGyro().getIMU();
-      navx.reset();
-    }
+  public void resetGyro(){
+    swerveDrive.zeroGyro();
+  }
 
-  public Command driveCommandAllianceManaged(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
+  public void driveAllianceManaged(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
+
+    SmartDashboard.putNumber("/swerve/controllerX", translationX.getAsDouble());
     BooleanSupplier isRed = () -> {
-      // Boolean supplier that controls when the path will be mirrored for the red alliance
-      // This will flip the path being followed to the red side of the field.
-      // THE ORIGIN WILL REMAIN ON THE BLUE SIDE
-
       var alliance = DriverStation.getAlliance();
       if (alliance.isPresent()) {
         return alliance.get() == DriverStation.Alliance.Red;
@@ -143,34 +140,28 @@ public class SwerveSubsystem extends SubsystemBase {
       return false;
     };
 
-    return run(() -> {
-      // Make the robot move
-      if(isRed.getAsBoolean()){
-        swerveDrive.drive(new Translation2d(-translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
-                                            -translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()),
-                          angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity(),
-                          true,
-                          false);
-      }
-      else{
-        swerveDrive.drive(new Translation2d(translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
-                                            translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()),
-                          angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity(),
-                          true,
-                          false);
-      }
-    });
-  }
-
-  private Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
-    return run(() -> {
-      // Make the robot move
-      swerveDrive.drive(new Translation2d(translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
-                                          translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()),
-                        angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity(),
-                        true,
-                        false);
-    });
+    if(isRed.getAsBoolean()){
+      swerveDrive.drive(
+        new Translation2d(
+          -translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+          -translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()
+        ),
+        angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity(),
+        true,
+        false
+      );
+    }
+    else{
+      swerveDrive.drive(
+        new Translation2d(
+          translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+          translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity()
+        ),
+        angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity(),
+        true,
+        false
+      );
+    }
   }
 
   public Command driveCommandRobotRelative(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
@@ -195,68 +186,12 @@ public class SwerveSubsystem extends SubsystemBase {
     }
     return false;
   }
-  public boolean isGyroCallibrating(){
-    AHRS navx = (AHRS)swerveDrive.getGyro().getIMU();
-    if(navx.isCalibrating()){
-      return true;
-    }
-    return false;
-  }
 
   public Pose2d getPose(){
     return swerveDrive.getPose();
   }
   public Rotation2d getHeading(){
     return swerveDrive.getGyro().getRotation3d().toRotation2d();
-  }
-
-  public Command pathToCoralLeft(){
-    return new DeferredCommand(()->privatePathToPose(FieldNavigation.getCoralLeft(getPose())), Set.of(this));
-  }
-
-  public Command pathToCoralRight(){
-    return new DeferredCommand(()->privatePathToPose(FieldNavigation.getCoralRight(getPose())), Set.of(this));
-  }
-
-  public Command pathToCoralSource(){
-    return new DeferredCommand(()->privatePathToPose(FieldNavigation.getCoralSource(getPose())), Set.of(this));
-  }
-
-  public Command pathToOffsetLeft(){
-    return new DeferredCommand(()->privatePathToOffset(FieldNavigation.getOffsetCoralLeft(getPose())), Set.of(this));
-  }
-
-  public Command pathToOffsetRight(){
-    return new DeferredCommand(()->privatePathToOffset(FieldNavigation.getOffsetCoralRight(getPose())), Set.of(this));
-  }
-
-  public Command pidToCoralLeft(){
-    return new DeferredCommand(()->pidToPoseFastCommand(FieldNavigation.getCoralLeft(getPose())), Set.of(this));
-  }
-
-  public Command pidToCoralRight(){
-    return new DeferredCommand(()->pidToPoseFastCommand(FieldNavigation.getCoralRight(getPose())), Set.of(this));
-  }
-
-  public Command pidToCoralLeftHuman(){
-    return new DeferredCommand(()->privatePathToPosePrecise(FieldNavigation.getCoralLeft(getPose())), Set.of(this));
-  }
-
-  public Command pidToCoralRightHuman(){
-    return new DeferredCommand(()->privatePathToPosePrecise(FieldNavigation.getCoralRight(getPose())), Set.of(this));
-  }
-
-  public Command pidToCoralSource(){
-    return new DeferredCommand(()->pidToPoseFastCommand(FieldNavigation.getCoralSource(getPose())), Set.of(this));
-  }
-
-  
-
-  public boolean isNearEnoughToPID(Pose2d target){
-    var distance = target.getTranslation().getDistance(getPose().getTranslation());
-    var result = distance <= Inches.of(35).in(Meters);
-    SmartDashboard.putBoolean("swerve/isNearEnough",result);
-    return result;
   }
 
   public boolean isNearEnoughToPIDAuto(Pose2d target){
@@ -305,59 +240,6 @@ public class SwerveSubsystem extends SubsystemBase {
 
   }
 
-  private void pidToPosePrecise(Pose2d pose){
-    final double transltionP = 3.0*1.2*1.5*1.5*1.5;
-    final double thetaP = 2.0*4*1.2;
-    
-
-    double clamp = 0.75;
-
-    Pose2d delta = pose.relativeTo(swerveDrive.getPose());
-
-    swerveDrive.setChassisSpeeds(new ChassisSpeeds(
-      MathUtil.clamp(delta.getX()*transltionP,-clamp, clamp),
-      MathUtil.clamp(delta.getY()*transltionP,-clamp,clamp),
-      delta.getRotation().getRadians()*thetaP
-    ));
-
-    SmartDashboard.putNumber("swerve/pidTargetPoseX", pose.getX());
-    SmartDashboard.putNumber("swerve/pidTargetPoseY", pose.getY());
-
-  }
-
-  public Command pidToPoseFastCommand(Pose2d poseSupplier){
-    return run(()->pidToPoseFast(poseSupplier)).finallyDo(()->stop());
-  }
-
-  public Command pidToPosePreciseCommand(Pose2d poseSupplier){
-    return run(()->pidToPosePrecise(poseSupplier));
-  }
-
-  private Command privatePathToOffset(Pose2d pose){
-    // return pidToPoseCommand(pose).until(()->isNear(pose, 12.0)).withTimeout(4.5);
-    return pidToPoseFastCommand(pose)
-      .until(()->isNear(pose, 12.0))
-      .withTimeout(4.5)
-    ;
-  }
-
-  private Command privatePathToPosePrecise(Pose2d pose){
-    return Commands.sequence(
-      pidToPoseFastCommand(pose).until(()->isNearEnoughToPIDPrecise(pose)).withTimeout(4.5),
-      pidToPosePreciseCommand(pose).until(()->isNearEnoughToScore(pose)).withTimeout(1.5),
-      new InstantCommand(this::stop,this)
-    );
-  }
-  private Command privatePathToPose(Pose2d pose){
-    return Commands.sequence(
-      pidToPoseFastCommand(pose)
-      .until(()->isNearEnoughToPID(pose))
-      .withTimeout(5),
-      pidToPosePreciseCommand(pose).until(()->isNearEnoughToScore(pose)).withTimeout(3.0),
-      new InstantCommand(this::stop,this)
-    );
-  }
-
   public void SetWantedState(WantedState wantedState){
     this.wantedState = wantedState;
   }
@@ -365,6 +247,12 @@ public class SwerveSubsystem extends SubsystemBase {
   public void SetWantedState(WantedState wantedState, Pose2d targetPose){
     this.targetPose = targetPose;
     this.wantedState = wantedState;
+  }
+
+  public void setWantedState(WantedState wantedState, DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
+    this.translationX = translationX;
+    this.translationY = translationY;
+    this.angularRotationX = angularRotationX;
   }
   
 

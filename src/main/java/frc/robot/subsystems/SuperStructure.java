@@ -39,13 +39,6 @@ public class SuperStructure extends SubsystemBase {
     PLACE_L2,
     PLACE_L1,
     PLACE_BARGE,
-    MOVE_TO_L4_AUTO,
-    MOVE_TO_L3_AUTO,
-    MOVE_TO_L2_AUTO,
-    MOVE_TO_L1_AUTO,
-    DRIVE_TO_BRANCH
-
-
   }
 
   public enum CurrentSuperState{
@@ -65,7 +58,6 @@ public class SuperStructure extends SubsystemBase {
     PLACE_L2,
     PLACE_L1,
     PLACE_BARGE,
-    DRIVE_TO_BRANCH
   }
 
   private WantedSuperState wantedSuperState = WantedSuperState.IDLE;
@@ -169,8 +161,6 @@ public class SuperStructure extends SubsystemBase {
           else{
             return CurrentSuperState.IDLE;
           }
-      case DRIVE_TO_BRANCH:
-        return CurrentSuperState.DRIVE_TO_BRANCH;
     }
     return CurrentSuperState.IDLE;
 }
@@ -238,9 +228,6 @@ public class SuperStructure extends SubsystemBase {
         break;
       case PLACE_BARGE:
         placeAtBarge();
-        break;
-      case DRIVE_TO_BRANCH:
-        driveToReefBranch();
         break;
     }
   }
@@ -375,10 +362,6 @@ public class SuperStructure extends SubsystemBase {
   }
 
   public void SetWantedState(SuperStructure.WantedSuperState wantedSuperState){
-    this.wantedSuperState = wantedSuperState;
-  }
-  public void SetWantedState(SuperStructure.WantedSuperState wantedSuperState, boolean leftReef){
-    this.leftReef = leftReef;
     this.wantedSuperState = wantedSuperState;
   }
 

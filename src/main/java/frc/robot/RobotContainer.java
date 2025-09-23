@@ -4,8 +4,10 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.subsystems.ArmSubsystem;
@@ -35,8 +37,15 @@ public class RobotContainer {
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
+    swerveSubsystem.setWantedState(
+      SwerveSubsystem.WantedState.TELEOP_DRIVE, 
+      ()->-driver.getLeftY(),
+      ()->-driver.getLeftX(),
+      ()->-driver.getRightX()
+    );
     // Configure the trigger bindings
     configureBindings();
+
   }
 
   /**
@@ -82,6 +91,12 @@ public class RobotContainer {
     // driver.leftBumper().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PLACE_L2)));
     // driver.leftTrigger().onTrue(new InstantCommand(()-> superStructure.SetWantedState(SuperStructure.WantedSuperState.PLACE_L1)));
     
+    driver.rightTrigger().whileTrue( //is it actually a whileTrue
+      new StartEndCommand(
+        ()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, new Pose2d()), 
+        ()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE)
+      )
+    );
   }
 
   /**
