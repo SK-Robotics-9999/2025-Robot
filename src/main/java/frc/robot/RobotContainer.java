@@ -14,7 +14,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.SuctionSubsystem;
 import frc.robot.subsystems.SuperStructure;
 import frc.robot.subsystems.SwerveSubsystem;
-
+import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.subsystems.QuestNavSubsystem;
 
 /** 
@@ -32,6 +32,7 @@ public class RobotContainer {
   SuctionSubsystem suctionSubsystem = new SuctionSubsystem();
   SuperStructure superStructure = new SuperStructure(swerveSubsystem, intakeSubsystem, elevatorSubsystem, armSubsystem, suctionSubsystem);
   
+  VisionSubsystem visionSubsystem = new VisionSubsystem(swerveSubsystem, superStructure);
   QuestNavSubsystem questNavSubsystem = new QuestNavSubsystem();
   
   CommandXboxController driver = new CommandXboxController(0);
