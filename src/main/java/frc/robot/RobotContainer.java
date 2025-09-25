@@ -167,9 +167,25 @@ public class RobotContainer {
       }
     }));
 
-    driver.leftBumper().onTrue(new InstantCommand());
-
-    driver.rightBumper().onTrue(new InstantCommand());
+    driver.leftBumper().whileTrue(new SequentialCommandGroup(
+        //the right to the vision of the apriltag is left when facing at the apriltag.
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()))),
+        waitUntil(swerveSubsystem::getOnTarget),
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose()))),
+        waitUntil(swerveSubsystem::getOnTarget)
+      )
+      .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
+    );
+    
+    driver.rightBumper().whileTrue(new SequentialCommandGroup(
+        //the right to the vision of the apriltag is left when facing at the apriltag.
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()))),
+        waitUntil(swerveSubsystem::getOnTarget),
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose()))),
+        waitUntil(swerveSubsystem::getOnTarget)
+      )
+      .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
+    );
 
     driver.povUp().onTrue(new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME)));
   }

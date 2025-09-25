@@ -4,6 +4,7 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
@@ -137,6 +138,7 @@ public class VisionSubsystem extends SubsystemBase {
         !result.hasTargets() 
         || result.getBestTarget().getPoseAmbiguity()>0.4 
         || swerve.getVelocity()>0.5 
+        || swerve.getAngularVelocity()>Math.toRadians(45.0)
         || superStructure.isIntaking()
       ){
         return;

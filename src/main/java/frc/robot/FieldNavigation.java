@@ -22,7 +22,6 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 
 /** Add your docs here. */
 public class FieldNavigation {
-static double botCenterToScorerOffset = Inches.of(0).in(Meters);
     static double botCenterToRearX = Inches.of((28/2.0)+5).in(Meters);
     static double pidApproachOffset = Inches.of(((28/2.0)+5)+12).in(Meters);
     static double coralY = Inches.of(15/2.0).in(Meters);

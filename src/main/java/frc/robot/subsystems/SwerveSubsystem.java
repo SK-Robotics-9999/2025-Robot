@@ -4,21 +4,21 @@
 
 package frc.robot.subsystems;
 
+import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
 import java.io.File;
-import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.studica.frc.AHRS;
 
-import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -26,9 +26,6 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.DeferredCommand;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldNavigation;
 import swervelib.SwerveDrive;
@@ -41,7 +38,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   
   double maximumSpeed = 5.033;
-  double maxVelocityForPID = 3.0; //meters
+  double maxVelocityForPID = 2.0; //meters
   double maxRotationalVelocityForPID = 4.0;
 
   SwerveDrive swerveDrive;
@@ -67,7 +64,7 @@ public class SwerveSubsystem extends SubsystemBase {
   private final PIDController autoCont = new PIDController(3, 0, 0.1);
   private final PIDController teleOpCont = new PIDController(3, 0, 0.1);
 
-  private double staticFrictionConstant = 0.02;
+  private double staticFrictionConstant = 0.01;
 
   DoubleSupplier translationX = ()->0.0;
   DoubleSupplier translationY = ()->0.0;
@@ -239,7 +236,7 @@ public class SwerveSubsystem extends SubsystemBase {
     var delta = pose.relativeTo(getPose());
     var linearDistance = delta.getTranslation().getNorm();
 
-    if(linearDistance > Inches.of(0.5).in(Meters)){
+    if(linearDistance > Inches.of(1.0).in(Meters)){
       frictionConstant = staticFrictionConstant*maximumSpeed;
     }
 
@@ -259,7 +256,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     double xcomponent = angle.getCos()*velocity;
     double ycomponent = angle.getSin()*velocity;
-    double rotationalComponent = Math.min(delta.getRotation().getRadians()*4.0,
+    double rotationalComponent = Math.min(delta.getRotation().getRadians()*2.0,
       maxRotationalVelocityForPID);
 
     swerveDrive.setChassisSpeeds(new ChassisSpeeds(
@@ -291,6 +288,20 @@ public class SwerveSubsystem extends SubsystemBase {
   public double getVelocity(){
     ChassisSpeeds speeds = swerveDrive.getRobotVelocity();
     return Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond);
+  }
+
+  public double getAngularVelocity(){
+    ChassisSpeeds speeds = swerveDrive.getRobotVelocity();
+    return speeds.omegaRadiansPerSecond;
+  }
+
+  public boolean getOnTarget(){
+    Transform2d delta = targetPose.minus(getPose());
+
+    return delta.getTranslation().getNorm()<Inches.of(1.0).in(Meters) 
+    && delta.getRotation().getDegrees()<3.0
+    && systemState==SystemState.DRIVING_TO_POINT
+    && getVelocity()<Inches.of(6.0).in(Meters);
   }
 
 
