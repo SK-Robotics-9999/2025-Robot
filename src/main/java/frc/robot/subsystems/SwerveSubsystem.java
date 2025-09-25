@@ -60,7 +60,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private WantedState wantedState = WantedState.IDLE;
   private SystemState systemState = SystemState.IDLING;
-  private WantedState previousWantedState;
+  private WantedState previousWantedState = WantedState.IDLE;
   private Pose2d targetPose;
 
 
@@ -137,9 +137,10 @@ public class SwerveSubsystem extends SubsystemBase {
         break;
     }}
     
-  public void resetGyro(){
-    swerveDrive.zeroGyro();
-  }
+    //idk if this works
+    public void resetGyro(){
+      swerveDrive.zeroGyro();
+    }
 
   public void driveAllianceManaged(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
 
@@ -286,6 +287,11 @@ public class SwerveSubsystem extends SubsystemBase {
     this.angularRotationX = angularRotationX;
   }
   
+  //Meters
+  public double getVelocity(){
+    ChassisSpeeds speeds = swerveDrive.getRobotVelocity();
+    return Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond);
+  }
 
 
 
