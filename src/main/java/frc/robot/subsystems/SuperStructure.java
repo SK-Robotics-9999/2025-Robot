@@ -363,4 +363,8 @@ public class SuperStructure extends SubsystemBase {
     this.wantedSuperState = wantedSuperState;
   }
 
+  public boolean isIntaking(){
+    return currentSuperState==CurrentSuperState.CORAL_GROUND_INTAKE;
+  }
+
 }

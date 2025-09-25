@@ -366,6 +366,11 @@ public class SwerveSubsystem extends SubsystemBase {
     this.wantedState = wantedState;
   }
   
+  //Meters
+  public double getVelocity(){
+    ChassisSpeeds speeds = swerveDrive.getRobotVelocity();
+    return Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond);
+  }
 
 
 

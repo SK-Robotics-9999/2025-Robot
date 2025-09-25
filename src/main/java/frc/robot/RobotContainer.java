@@ -14,9 +14,10 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.SuctionSubsystem;
 import frc.robot.subsystems.SuperStructure;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.subsystems.QuestNavSubsystem;
 
-
-/**
+/** 
  * This class is where the bulk of the robot should be declared. Since Command-based is a
  * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
@@ -30,7 +31,10 @@ public class RobotContainer {
   IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
   SuctionSubsystem suctionSubsystem = new SuctionSubsystem();
   SuperStructure superStructure = new SuperStructure(swerveSubsystem, intakeSubsystem, elevatorSubsystem, armSubsystem, suctionSubsystem);
-
+  
+  VisionSubsystem visionSubsystem = new VisionSubsystem(swerveSubsystem, superStructure);
+  // QuestNavSubsystem questNavSubsystem = new QuestNavSubsystem();
+  
   CommandXboxController driver = new CommandXboxController(0);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
