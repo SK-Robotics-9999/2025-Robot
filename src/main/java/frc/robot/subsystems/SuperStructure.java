@@ -104,12 +104,12 @@ public class SuperStructure extends SubsystemBase {
       case PREPARE_TO_RECEIVE:
         return CurrentSuperState.PREPARE_TO_INTAKE;
       case CORAL_GROUND_INTAKE:
-        if (previousSuperState==CurrentSuperState.PREPARE_TO_INTAKE){
+        // if (previousSuperState==CurrentSuperState.PREPARE_TO_INTAKE){
           return CurrentSuperState.CORAL_GROUND_INTAKE;
-        }
-        else{
-          return CurrentSuperState.IDLE;
-        }
+        // }
+        // else{
+        //   return CurrentSuperState.IDLE;
+        // }
       case CORAL_GROUND_RECEIVE:
         return CurrentSuperState.CORAL_GROUND_RECEIVE;
       case PREPARE_TO_PLACE:
@@ -237,6 +237,7 @@ public class SuperStructure extends SubsystemBase {
       elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.HOME);
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.HOME);
   }
 
   private void prepareToIntake(){
@@ -245,6 +246,7 @@ public class SuperStructure extends SubsystemBase {
       armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
 
   
@@ -261,29 +263,28 @@ public class SuperStructure extends SubsystemBase {
       armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.POST_INTAKE);
-    //add pressure/suction
-
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
 
   private void prepareToPlace(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.postIntake);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.POST_INTAKE);
-    //keep pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
 
   private void moveToL4(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL4);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL4);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    //keep pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
 
   private void moveToL3(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL3);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL3);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    //keep pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
 
   private void moveToL2(){
@@ -293,27 +294,29 @@ public class SuperStructure extends SubsystemBase {
       elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL2);
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    //keep pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
 
   private void moveToL1(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL1);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL1);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    //keep pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
 
   private void moveToBarge(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.barge);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.barge);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    //keep pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
 
   private void placeAtL4(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.scoreL4);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.scoreL4);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
+
     //release pressure
   }
 
@@ -321,28 +324,28 @@ public class SuperStructure extends SubsystemBase {
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.scoreL3);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.scoreL3);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    //release pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
   }
 
   private void placeAtL2(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.scoreL2);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.scoreL2);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    //release pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
   }
   
   private void placeAtL1(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.scoreL1);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.scoreL1);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    //release pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
   }
 
   private void placeAtBarge(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.barge);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.barge);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    //release pressure
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
   }
   
   public CurrentSuperState getCurrentSuperState(){

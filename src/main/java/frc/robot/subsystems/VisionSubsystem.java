@@ -8,6 +8,7 @@ import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
+import java.lang.StackWalker.Option;
 import java.util.List;
 import java.util.Optional;
 
@@ -64,13 +65,13 @@ public class VisionSubsystem extends SubsystemBase {
     leftCameraTransform
   );
 
-  private final double objectHeight = Inches.of(20.0).in(Meters);
-  private final double objectPitch = Math.toRadians(-45.0);
-  private final double objectYaw = Math.toRadians(45.0);
+  private final double objectHeight = Inches.of(37.792).in(Meters);
+  private final double objectPitch = Math.toRadians(25.77);
+  private final double objectYaw = Math.toRadians(44.08);
   //not right
   Transform3d objectCameraTransform = new Transform3d(new Translation3d(
-      Inches.of(5.0).in(Meters),
-      Inches.of(-5.0).in(Meters),
+      Inches.of(6.182).in(Meters),
+      Inches.of(-7.582).in(Meters),
       objectHeight
     ),
     new Rotation3d(0.0, objectPitch, objectYaw)
@@ -95,7 +96,7 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     try{
-      objectCamera = Optional.of(new PhotonCamera("objectCamera"));
+      objectCamera = Optional.of(new PhotonCamera("object_cam"));
       if (!objectCamera.get().isConnected()) {
         objectCamera = Optional.empty();
       }
@@ -115,6 +116,10 @@ public class VisionSubsystem extends SubsystemBase {
     SmartDashboard.putBoolean("vision/leftCameraPresent", leftCamera.isPresent());
     SmartDashboard.putBoolean("vision/objectCameraPresent", objectCamera.isPresent());
 
+    Optional<Translation2d> object = getObjectTranslationRelative();
+    if(object.isPresent()){
+      visionField.getObject("relativePose").setPose(new Pose2d(object.get(), new Rotation2d()));
+    }
     visionField.setRobotPose(swerve.getPose());
 
     updateOdometry();
@@ -169,6 +174,44 @@ public class VisionSubsystem extends SubsystemBase {
       }
     }
 
+  }
+
+  public Optional<Translation2d> getObjectTranslationRelative(){
+    if(objectCamera.isEmpty()){return Optional.empty();}
+    
+    List<PhotonPipelineResult> results = objectCamera.get().getAllUnreadResults();
+    if(results.isEmpty()){return Optional.empty();}
+
+    PhotonPipelineResult result = results.get(results.size()-1);
+
+    if(!result.hasTargets()){return Optional.empty();}
+
+    PhotonTrackedTarget target = result.getBestTarget();
+
+    //degrees, angle from horizontal
+    double pitch = target.getPitch()-Math.toDegrees(objectPitch);
+    SmartDashboard.putNumber("/vision/object/pitch", pitch);
+
+    //pls check this geometry
+    
+    //height of camera - height of middle of coral
+    final double height = objectHeight-Inches.of(4.5/2.0).in(Meters);
+
+    //due to alternate interior angles, our pitch is equivalent to the angle starting from the ground-coral to coral-camera
+    //opposite(height)/x distance = tan(pitch), opposite/tan(pitch)
+    double relativeX = height/Math.tan(Math.toRadians(pitch));
+
+    double hypot = Math.hypot(relativeX, height);
+
+    double yaw = target.getYaw();
+
+    double relativeY = Math.tan(yaw)*hypot;
+
+    Translation2d relativeTranslation = new Translation2d(relativeX, relativeY);
+
+    Translation2d robotRelativeTranslation = relativeTranslation.rotateAround(objectCameraTransform.getTranslation().toTranslation2d(), new Rotation2d(-yaw));
+
+    return Optional.of(robotRelativeTranslation);
   }
 
 }

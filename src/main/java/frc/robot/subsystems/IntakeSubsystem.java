@@ -236,7 +236,7 @@ public class IntakeSubsystem extends SubsystemBase {
   public void intakeStuff(){
     if(pivotMotor.getAbsoluteEncoder().getPosition()>130.0){
       pivotMotor.setVoltage(-0.5);
-      rollerMotor.setVoltage(0);
+      rollerMotor.setVoltage(-8.5);
       stopPassthrough();
     }
     else{

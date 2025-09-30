@@ -102,7 +102,7 @@ public class RobotContainer {
           new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE)),
           waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
           new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE)),
-          waitUntil(elevatorSubsystem::getOnTarget),//add suction thing
+          waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
           new WaitCommand(0.5),
           new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE)),
           waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
@@ -116,7 +116,7 @@ public class RobotContainer {
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE)),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE)),
-        waitUntil(elevatorSubsystem::getOnTarget),//add suction thing
+        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
         new WaitCommand(0.5),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE)),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
@@ -129,7 +129,7 @@ public class RobotContainer {
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE)),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE)),
-        waitUntil(elevatorSubsystem::getOnTarget),//add suction thing
+        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
         new WaitCommand(0.5),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE)),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
@@ -142,7 +142,7 @@ public class RobotContainer {
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE)),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE)),
-        waitUntil(elevatorSubsystem::getOnTarget),//add suction thing
+        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
         new WaitCommand(0.5),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE)),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
