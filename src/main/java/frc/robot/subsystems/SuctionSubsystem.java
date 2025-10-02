@@ -5,7 +5,8 @@
     import com.revrobotics.spark.SparkBase.PersistMode;
     import com.revrobotics.spark.SparkBase.ResetMode;
     import com.revrobotics.spark.SparkLowLevel.MotorType;
-    import com.revrobotics.spark.SparkMax;
+import com.revrobotics.spark.SparkFlex;
+import com.revrobotics.spark.SparkMax;
     import com.revrobotics.spark.config.SparkBaseConfig;
     import com.revrobotics.spark.config.SparkMaxConfig;
 
@@ -23,7 +24,7 @@
         AnalogInput vacuumSensor = new AnalogInput(0);  
         DigitalOutput solenoid = new DigitalOutput(9);
 
-        SparkMax suctionMotor = new SparkMax(MotorConstants.kSuctionID, MotorType.kBrushless);
+        SparkFlex suctionMotor = new SparkFlex(MotorConstants.kSuctionID, MotorType.kBrushless);
 
         private final double targetPressureCoral = 30.0;
         private final double targetPressureAlgae = 40.0;

@@ -4,16 +4,21 @@
 
 package frc.robot;
 
-import java.lang.reflect.Field;
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Meters;
+
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
-import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
@@ -24,7 +29,6 @@ import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.SuctionSubsystem;
 import frc.robot.subsystems.SuperStructure;
-import frc.robot.subsystems.SuperStructure.CurrentSuperState;
 import frc.robot.subsystems.SuperStructure.WantedSuperState;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
@@ -123,9 +127,40 @@ public class RobotContainer {
         },
         ()->-driver.getLeftY(),
         ()->-driver.getLeftX(),
-        ()->-driver.getRightX()
+        ()->-driver.getRightX(),
+        false
       ), swerveSubsystem)
+
       .until(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
+
+      .andThen(new RunCommand(()->swerveSubsystem.setWantedState(
+        SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
+        ()->0,
+        ()->{
+          Optional<Translation2d> optional = visionSubsystem.getObjectTranslationRelative();
+          if(optional.isEmpty()){return 0.0;}
+          Translation2d translation = optional.get();
+          if(Math.abs(translation.getY())<Inches.of(1).in(Meters)){return 0.0;}
+          ChassisSpeeds robotRelative = swerveSubsystem.getRobotRelativeSpeeds();
+          
+          double xSpeed = robotRelative.vxMetersPerSecond;
+          if(xSpeed<0.0){return 0.0;}
+          xSpeed=Math.sqrt(xSpeed);
+          Rotation2d robotToCoral = translation.getAngle();
+          double yAssist = xSpeed * robotToCoral.getTan();
+          yAssist*=5.0;
+
+          if(Math.abs(yAssist)<0.05){return 0.0;}
+          
+          SmartDashboard.putNumber("vision/intaking/yAssist", yAssist);
+          return yAssist;
+        },
+        ()->-driver.getLeftY(),
+        ()->-driver.getLeftX(),
+        ()->-driver.getRightX(),
+        true
+      ), swerveSubsystem))
+
       .finallyDo((e)->swerveSubsystem.setWantedState(
         SwerveSubsystem.WantedState.TELEOP_DRIVE, 
         ()->-driver.getLeftY(),
@@ -153,7 +188,8 @@ public class RobotContainer {
       }),
 
       ()->coralMode
-    ));
+    ))
+    ;
 
       //Move To l1
       driver.a().onTrue(

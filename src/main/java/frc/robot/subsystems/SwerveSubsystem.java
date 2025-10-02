@@ -66,6 +66,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private DoubleSupplier xAssister = ()->0.0;
   private DoubleSupplier yAssister = ()->0.0;
+  private boolean assisterIsRobotRelative=false;
 
 
   private final PIDController autoCont = new PIDController(3, 0, 0.1);
@@ -79,6 +80,14 @@ public class SwerveSubsystem extends SubsystemBase {
 
   //2.24-1.88
   public static final SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(0.1, 2.75, 0.35);
+
+  BooleanSupplier isRed = () -> {
+    var alliance = DriverStation.getAlliance();
+    if (alliance.isPresent()) {
+      return alliance.get() == DriverStation.Alliance.Red;
+    }
+    return false;
+  };
 
   public SwerveSubsystem() {
     SmartDashboard.putData("odometryField", odometryField);
@@ -145,7 +154,12 @@ public class SwerveSubsystem extends SubsystemBase {
         driveAllianceManaged(translationX, translationY, angularRotationX);
         break;
       case ASSISTED_TELEOP_DRIVING:
-        driveAllianceManaged(()->translationX.getAsDouble()+xAssister.getAsDouble(), ()->translationY.getAsDouble()+yAssister.getAsDouble(), angularRotationX);
+        if(assisterIsRobotRelative){
+          driveRobotRelativeCombined(translationX, translationY, angularRotationX);
+        }
+        else{
+          driveAllianceManaged(()->translationX.getAsDouble()+xAssister.getAsDouble(), ()->translationY.getAsDouble()+yAssister.getAsDouble(), angularRotationX);
+        }
         break;
     }}
     
@@ -155,16 +169,6 @@ public class SwerveSubsystem extends SubsystemBase {
     }
 
   public void driveAllianceManaged(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
-
-    SmartDashboard.putNumber("/swerve/controllerX", translationX.getAsDouble());
-    BooleanSupplier isRed = () -> {
-      var alliance = DriverStation.getAlliance();
-      if (alliance.isPresent()) {
-        return alliance.get() == DriverStation.Alliance.Red;
-      }
-      return false;
-    };
-
     if(isRed.getAsBoolean()){
       swerveDrive.drive(
         new Translation2d(
@@ -198,6 +202,38 @@ public class SwerveSubsystem extends SubsystemBase {
                         false,
                         false);
     });
+  }
+
+  //alliance managed, whatever
+  public void driveRobotRelativeCombined(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
+    if(isRed.getAsBoolean()){
+      swerveDrive.driveFieldOrientedAndRobotOriented(
+        new ChassisSpeeds(
+          -translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+          -translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+          angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity()
+        ),
+        new ChassisSpeeds(
+          xAssister.getAsDouble(),
+          yAssister.getAsDouble(),
+          0.0
+        )
+      );
+    }
+    else{
+      swerveDrive.driveFieldOrientedAndRobotOriented(
+        new ChassisSpeeds(
+          translationX.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+          translationY.getAsDouble() * swerveDrive.getMaximumChassisVelocity(),
+          angularRotationX.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity()
+        ),
+        new ChassisSpeeds(
+          xAssister.getAsDouble(),
+          yAssister.getAsDouble(),
+          0.0
+        )
+      );
+    } 
   }
 
   private void stop(){
@@ -299,13 +335,14 @@ public class SwerveSubsystem extends SubsystemBase {
     this.angularRotationX = angularRotationX;
   }
 
-  public void setWantedState(WantedState wantedState, DoubleSupplier xAssister, DoubleSupplier yAssister, DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
+  public void setWantedState(WantedState wantedState, DoubleSupplier xAssister, DoubleSupplier yAssister, DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX, boolean assisterIsRobotRelative){
     this.wantedState = wantedState;
     this.xAssister = xAssister;
     this.yAssister = yAssister;
     this.translationX = translationX;
     this.translationY = translationY;
     this.angularRotationX = angularRotationX;
+    this.assisterIsRobotRelative = assisterIsRobotRelative;
   }
   
   //Meters
@@ -326,6 +363,10 @@ public class SwerveSubsystem extends SubsystemBase {
     && delta.getRotation().getDegrees()<3.0
     && systemState==SystemState.DRIVING_TO_POINT
     && getVelocity()<Inches.of(6.0).in(Meters);
+  }
+
+  public ChassisSpeeds getRobotRelativeSpeeds(){
+    return swerveDrive.getRobotVelocity();
   }
 
 
