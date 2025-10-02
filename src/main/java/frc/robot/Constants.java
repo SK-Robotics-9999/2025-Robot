@@ -58,27 +58,27 @@ public final class Constants {
     public static final double safeL2 = -5;
     //THESE ALLLLLL NEEEEEED TO BE CHANGED
     public static final double moveL1 = -15;
-    public static final double moveL2 = 30;
-    public static final double moveL3 = 30;
-    public static final double moveL4 = 20; 
+    public static final double moveL2 = 20;
+    public static final double moveL3 = 20;
+    public static final double moveL4 = 35; 
     public static final double scoreL1 = -15;
     public static final double scoreL2 = 25;
     public static final double scoreL3 = 25;
-    public static final double scoreL4 = 5;
+    public static final double scoreL4 = 15;
     public static final double barge = 90;
 
   }
 
   public static class ElevatorConstants{
-    public static final double preIntake = 16.0;
+    public static final double preIntake = 20.0;
     public static final double intake = 13.0;
     public static final double postIntake = 20.0;
-    public static final double moveL4 = 52.0;
-    public static final double moveL3 = 22.0;
-    public static final double moveL2 = 6.0;
+    public static final double moveL4 = 48.0;
+    public static final double moveL3 = 30.0;
+    public static final double moveL2 = 14.0;
     public static final double moveL1 = 13.0;
     public static final double barge = 50.0;
-    public static final double scoreL4 = 51.0;
+    public static final double scoreL4 = 42.0;
     public static final double scoreL3 = 21.0;
     public static final double scoreL2 = 5.0;
     public static final double scoreL1 = 13.0;

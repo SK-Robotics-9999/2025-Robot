@@ -4,29 +4,29 @@
 
 package frc.robot;
 
+import java.lang.reflect.Field;
 import java.util.function.BooleanSupplier;
 
-import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
-import edu.wpi.first.wpilibj2.command.StartEndCommand;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
-import frc.robot.Constants.ArmConstants;
 import frc.robot.subsystems.ArmSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.SuctionSubsystem;
 import frc.robot.subsystems.SuperStructure;
-import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.SuperStructure.WantedSuperState;
+import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
-import frc.robot.subsystems.QuestNavSubsystem;
 
 /** 
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -47,6 +47,16 @@ public class RobotContainer {
   // QuestNavSubsystem questNavSubsystem = new QuestNavSubsystem();
   
   CommandXboxController driver = new CommandXboxController(0);
+
+  BooleanSupplier isRed = () -> {
+    var alliance = DriverStation.getAlliance();
+    if (alliance.isPresent()) {
+      return alliance.get() == DriverStation.Alliance.Red;
+    }
+    return false;
+  };
+
+  private boolean hasCoral=false;//TODO: technically true at the start of auto, will fix after
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -88,65 +98,110 @@ public class RobotContainer {
     driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
 
     //intake
-    driver.leftTrigger().onTrue(new SequentialCommandGroup(
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE)),
-      waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE)),
-      waitUntil(()->intakeSubsystem.hasCoral()&&!driver.rightTrigger().getAsBoolean()),
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE))
-      ));
+    driver.leftTrigger()
+    .whileTrue(
+      new RunCommand(()->swerveSubsystem.setWantedState(
+        SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
+        ()->{
+          Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
+          double xAssist = 0.2*Math.sin(poseRotation.getRadians());
+          xAssist *= isRed.getAsBoolean() ? -1 : 1;
+
+          return xAssist;
+        },
+        ()->{
+          Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
+          double yAssist = 0.2*Math.cos(poseRotation.getRadians());
+          yAssist *= isRed.getAsBoolean() ? -1 : 1;
+
+          return yAssist;
+        },
+        ()->-driver.getLeftY(),
+        ()->-driver.getLeftX(),
+        ()->-driver.getRightX()
+      ), swerveSubsystem)
+      .until(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
+      .finallyDo((e)->swerveSubsystem.setWantedState(
+        SwerveSubsystem.WantedState.TELEOP_DRIVE, 
+        ()->-driver.getLeftY(),
+        ()->-driver.getLeftX(),
+        ()->-driver.getRightX()
+      ))
+    )
+    .onTrue(new SequentialCommandGroup(
+      waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())),
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
+      waitUntil(intakeSubsystem::hasCoral,()->!driver.rightTrigger().getAsBoolean(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_INTAKE),superStructure)
+    ));
 
       //Move To l1
       driver.a().onTrue(
-        new SequentialCommandGroup(
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE)),
-          waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE)),
-          waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
-          new WaitCommand(0.5),
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE)),
-          waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L1))
-        )
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
+        waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
+        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
+        new WaitCommand(0.5),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
+        waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
+        new InstantCommand(()->hasCoral=true)
+      )
+      .until(()->hasCoral)
+      .andThen(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L1),superStructure)
+      )
       );
       
       //Move To l2
       driver.b().onTrue(
-        new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE)),
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE)),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
-        new WaitCommand(0.5),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE)),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L2))
+        new InstantCommand(()->hasCoral=true)
+      )
+      .until(()->hasCoral)
+      .andThen(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L2),superStructure)
       )
     );
+
     //Move To l3
     driver.x().onTrue(
       new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE)),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE)),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
         new WaitCommand(0.5),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE)),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L3))
+        new InstantCommand(()->hasCoral=true)
+      )
+      .until(()->hasCoral)
+      .andThen(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L3),superStructure)
       )
     );
     //Move To l4
     driver.y().onTrue(
       new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE)),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE)),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
         new WaitCommand(0.5),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE)),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4))
+        new InstantCommand(()->hasCoral=true)
+      )
+      .until(()->hasCoral)
+      .andThen(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4),superStructure)
       )
     );
 
@@ -165,13 +220,15 @@ public class RobotContainer {
           superStructure.SetWantedState(WantedSuperState.PLACE_L4);
           break;
       }
-    }));
+    },superStructure)
+    .alongWith(new InstantCommand(()->hasCoral=false))
+    );
 
     driver.leftBumper().whileTrue(new SequentialCommandGroup(
         //the right to the vision of the apriltag is left when facing at the apriltag.
-        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()))),
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
         waitUntil(swerveSubsystem::getOnTarget),
-        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose()))),
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
         waitUntil(swerveSubsystem::getOnTarget)
       )
       .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
@@ -179,15 +236,21 @@ public class RobotContainer {
     
     driver.rightBumper().whileTrue(new SequentialCommandGroup(
         //the right to the vision of the apriltag is left when facing at the apriltag.
-        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()))),
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
         waitUntil(swerveSubsystem::getOnTarget),
-        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose()))),
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
         waitUntil(swerveSubsystem::getOnTarget)
       )
       .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
     );
 
-    driver.povUp().onTrue(new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME)));
+    // driver.start().whileTrue(new SequentialCommandGroup(
+    //   new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getReefAlgae(swerveSubsystem.getPose())))
+
+
+    // ));
+
+    driver.povUp().onTrue(new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure));
   }
 
   /**

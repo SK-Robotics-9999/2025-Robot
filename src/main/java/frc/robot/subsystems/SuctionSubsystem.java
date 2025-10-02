@@ -25,9 +25,9 @@
 
         SparkMax suctionMotor = new SparkMax(MotorConstants.kSuctionID, MotorType.kBrushless);
 
-        private final double targetPressure = 60.0;
+        private final double targetPressure = 30.0;
 
-        PIDController pid = new PIDController(12.0/20.0, 0, 0);
+        PIDController pid = new PIDController(12.0/10.0, 0, 0);
 
 
 
@@ -139,8 +139,9 @@
             return solenoid.get();
         }
 
+        //for coral
         public boolean getSuctionGood(){
-            return getPressure()>53.0; //TODO: needs to be fixed... should not be 53.0
+            return getPressure()>20.0;
         }
 
         public void SetWantedState(WantedState wantedState){

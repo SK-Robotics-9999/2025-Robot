@@ -19,10 +19,11 @@ import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /** Add your docs here. */
 public class FieldNavigation {
-    static double botCenterToRearX = Inches.of((28/2.0)+5).in(Meters);
+    static double botCenterToRearX = Inches.of((28/2.0)+10.0).in(Meters);
     static double pidApproachOffset = Inches.of(((28/2.0)+5)+12).in(Meters);
     static double coralY = Inches.of(15/2.0).in(Meters);
     //These are right relative from the tag's pose facing out  from the reef
@@ -71,7 +72,7 @@ public class FieldNavigation {
 
 
 
-    public Pose2d getNearestReef(Pose2d currentPose){
+    public static Pose2d getNearestReef(Pose2d currentPose){
         return currentPose.nearest(tagsReef);
     }
 
@@ -149,6 +150,21 @@ public class FieldNavigation {
         }
     }
 
+    public static boolean getTooCloseToTag(Pose2d currentPose){
+        Pose2d nearest = getNearestReef(currentPose);
+
+        Transform2d distance = currentPose.minus(nearest);
+
+        boolean tooCloseX = distance.getMeasureX().in(Inches)<(12.0+17.0);//17 is for bumper edge to robot center
+        SmartDashboard.putBoolean("swerve/tooCloseX", tooCloseX);
+        
+        boolean tooCloseY = Math.abs(distance.getMeasureY().in(Inches))<25.0;
+        SmartDashboard.putBoolean("swerve/tooCloseY", tooCloseY);
+
+
+
+        return tooCloseX && tooCloseY;
+    }
 
 
 }

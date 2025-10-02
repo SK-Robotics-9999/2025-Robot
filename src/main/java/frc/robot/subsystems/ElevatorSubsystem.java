@@ -48,7 +48,7 @@ public class ElevatorSubsystem extends SubsystemBase {
   public final static double stage1To2Height = 24.5;//don't want to convert rn
   
   private final double maxVelocity = 90.0; //inches per second
-  private final double maxAccel = 150.0; //inches per second squared
+  private final double maxAccel = 200.0; //inches per second squared
   private final TrapezoidProfile trapProfile = new TrapezoidProfile(new TrapezoidProfile.Constraints(maxVelocity, maxAccel));
     
   ElevatorFeedforward elevatorFF = new ElevatorFeedforward(0.08, 0.22, 0.0);
@@ -133,15 +133,15 @@ public class ElevatorSubsystem extends SubsystemBase {
   }
 
   public void periodic() {
-    SmartDashboard.putNumber("/elevator/height", elevatorMotorFront.getEncoder().getPosition());
-    SmartDashboard.putNumber("/elevator/vel", elevatorMotorFront.getEncoder().getVelocity());
-    SmartDashboard.putBoolean("/elevator/limitSwitchEnabled", !bottomLimitSwitch.get());
-    SmartDashboard.putBoolean("/elevator/hasReset", hasReset);
-    SmartDashboard.putBoolean("/elevator/motorsInverted", elevatorMotorBack.configAccessor.getFollowerModeInverted());
+    // SmartDashboard.putNumber("/elevator/height", elevatorMotorFront.getEncoder().getPosition());
+    // SmartDashboard.putNumber("/elevator/vel", elevatorMotorFront.getEncoder().getVelocity());
+    // SmartDashboard.putBoolean("/elevator/limitSwitchEnabled", !bottomLimitSwitch.get());
+    // SmartDashboard.putBoolean("/elevator/hasReset", hasReset);
+    // SmartDashboard.putBoolean("/elevator/motorsInverted", elevatorMotorBack.configAccessor.getFollowerModeInverted());
 
-    SmartDashboard.putNumber("/elevator/voltage", elevatorMotorFront.getAppliedOutput()*elevatorMotorFront.getBusVoltage());
-    SmartDashboard.putNumber("/elevator/voltageBack", -elevatorMotorBack.getAppliedOutput()*elevatorMotorBack.getBusVoltage());
-    SmartDashboard.putNumber("/elevator/current", elevatorMotorFront.getOutputCurrent());
+    // SmartDashboard.putNumber("/elevator/voltage", elevatorMotorFront.getAppliedOutput()*elevatorMotorFront.getBusVoltage());
+    // SmartDashboard.putNumber("/elevator/voltageBack", -elevatorMotorBack.getAppliedOutput()*elevatorMotorBack.getBusVoltage());
+    // SmartDashboard.putNumber("/elevator/current", elevatorMotorFront.getOutputCurrent());
 
 
     //for some reason doesn't work in a trigger, whatever, not important rn i hope

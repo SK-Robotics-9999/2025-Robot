@@ -95,15 +95,16 @@ public class VisionSubsystem extends SubsystemBase {
       leftCamera = Optional.empty();
     }
 
-    try{
-      objectCamera = Optional.of(new PhotonCamera("object_cam"));
-      if (!objectCamera.get().isConnected()) {
-        objectCamera = Optional.empty();
-      }
-    }catch(Error e){
-      System.err.print(e);
-      objectCamera = Optional.empty();
-    }
+    // try{
+    //   objectCamera = Optional.of(new PhotonCamera("object_cam"));
+    //   if (!objectCamera.get().isConnected()) {
+    //     objectCamera = Optional.empty();
+    //   }
+    // }catch(Error e){
+    //   System.err.print(e);
+    //   objectCamera = Optional.empty();
+    // }
+    objectCamera = Optional.empty();
    
   }
 

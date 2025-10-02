@@ -56,7 +56,7 @@ public class ArmSubsystem extends SubsystemBase {
   private double targetAngle = 90.0;
 
   private final double maxVelocity = 450.0; //degrees per second, i hope
-  private final double maxAccel = 550.0;
+  private final double maxAccel = 750.0;
   private final TrapezoidProfile trapProfile = new TrapezoidProfile(
     new TrapezoidProfile.Constraints(maxVelocity, maxAccel)
   );
@@ -109,17 +109,17 @@ public class ArmSubsystem extends SubsystemBase {
   public void periodic() {
     // This method will be called once per scheduler run
     
-    SmartDashboard.putNumber("/arm/absValue", armMotor.getAbsoluteEncoder().getPosition());
-    SmartDashboard.putNumber("/arm/relativeValue", armMotor.getEncoder().getPosition());
-    SmartDashboard.putNumber("/arm/relativeVelo", armMotor.getEncoder().getVelocity());
+    // SmartDashboard.putNumber("/arm/absValue", armMotor.getAbsoluteEncoder().getPosition());
+    // SmartDashboard.putNumber("/arm/relativeValue", armMotor.getEncoder().getPosition());
+    // SmartDashboard.putNumber("/arm/relativeVelo", armMotor.getEncoder().getVelocity());
 
-    SmartDashboard.putNumber("/arm/voltage", armMotor.getAppliedOutput()*armMotor.getBusVoltage());
-    SmartDashboard.putNumber("/arm/current", armMotor.getOutputCurrent()); 
+    // SmartDashboard.putNumber("/arm/voltage", armMotor.getAppliedOutput()*armMotor.getBusVoltage());
+    // SmartDashboard.putNumber("/arm/current", armMotor.getOutputCurrent()); 
 
-    SmartDashboard.putNumber("/arm/targetAngle", targetAngle);
-    SmartDashboard.putNumber("/arm/trapGoalAngle", trapGoal.position);
-    SmartDashboard.putNumber("/arm/trapStateAngle", trapState.position);
-    SmartDashboard.putBoolean("/arm/onTarget", getOnTarget());
+    // SmartDashboard.putNumber("/arm/targetAngle", targetAngle);
+    // SmartDashboard.putNumber("/arm/trapGoalAngle", trapGoal.position);
+    // SmartDashboard.putNumber("/arm/trapStateAngle", trapState.position);
+    // SmartDashboard.putBoolean("/arm/onTarget", getOnTarget());
 
     systemState = handleStateTransitions();
 

@@ -46,19 +46,24 @@ public class SwerveSubsystem extends SubsystemBase {
   public static enum WantedState{
     DRIVE_TO_POINT,
     IDLE,
-    TELEOP_DRIVE
+    TELEOP_DRIVE,
+    ASSISTED_TELEOP_DRIVE
   }
 
   public static enum SystemState{
     DRIVING_TO_POINT,
     IDLING,
-    TELEOP_DRIVING
+    TELEOP_DRIVING,
+    ASSISTED_TELEOP_DRIVING
   }
 
   private WantedState wantedState = WantedState.IDLE;
   private SystemState systemState = SystemState.IDLING;
   private WantedState previousWantedState = WantedState.IDLE;
   private Pose2d targetPose;
+
+  private DoubleSupplier xAssister = ()->0.0;
+  private DoubleSupplier yAssister = ()->0.0;
 
 
   private final PIDController autoCont = new PIDController(3, 0, 0.1);
@@ -95,14 +100,16 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.updateOdometry();
     odometryField.setRobotPose(swerveDrive.getPose());
 
-    SmartDashboard.putNumber("swerve/wheelencoder", swerveDrive.getModules()[0].getPosition().distanceMeters);
+    // SmartDashboard.putNumber("swerve/wheelencoder", swerveDrive.getModules()[0].getPosition().distanceMeters);
     
-    SmartDashboard.putNumber("swerve/heading", swerveDrive.getOdometryHeading().getDegrees());
-    SmartDashboard.putNumber("swerve/x", swerveDrive.getPose().getX());
-    SmartDashboard.putNumber("swerve/y", swerveDrive.getPose().getY());
+    // SmartDashboard.putNumber("swerve/heading", swerveDrive.getOdometryHeading().getDegrees());
+    // SmartDashboard.putNumber("swerve/x", swerveDrive.getPose().getX());
+    // SmartDashboard.putNumber("swerve/y", swerveDrive.getPose().getY());
     
     //SmartDashboard.putBoolean("Navx/Connected", isGyroConnected());
-
+    
+    // SmartDashboard.putString("swerve/systemState", systemState.toString());
+    // SmartDashboard.putBoolean("swerve/isTooClose", FieldNavigation.getTooCloseToTag(getPose()));
     systemState = handleStateTransitions();
     ApplyStates();
 
@@ -116,6 +123,8 @@ public class SwerveSubsystem extends SubsystemBase {
         return SystemState.IDLING;
       case DRIVE_TO_POINT:
         return SystemState.DRIVING_TO_POINT;
+      case ASSISTED_TELEOP_DRIVE:
+        return SystemState.ASSISTED_TELEOP_DRIVING;
     }
     return SystemState.IDLING;
   }
@@ -131,6 +140,9 @@ public class SwerveSubsystem extends SubsystemBase {
       case TELEOP_DRIVING:
         //TELEOP DRIVE
         driveAllianceManaged(translationX, translationY, angularRotationX);
+        break;
+      case ASSISTED_TELEOP_DRIVING:
+        driveAllianceManaged(()->translationX.getAsDouble()+xAssister.getAsDouble(), ()->translationY.getAsDouble()+yAssister.getAsDouble(), angularRotationX);
         break;
     }}
     
@@ -279,6 +291,15 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public void setWantedState(WantedState wantedState, DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
     this.wantedState = wantedState;
+    this.translationX = translationX;
+    this.translationY = translationY;
+    this.angularRotationX = angularRotationX;
+  }
+
+  public void setWantedState(WantedState wantedState, DoubleSupplier xAssister, DoubleSupplier yAssister, DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier angularRotationX){
+    this.wantedState = wantedState;
+    this.xAssister = xAssister;
+    this.yAssister = yAssister;
     this.translationX = translationX;
     this.translationY = translationY;
     this.angularRotationX = angularRotationX;

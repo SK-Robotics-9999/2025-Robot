@@ -111,13 +111,13 @@ public class IntakeSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    SmartDashboard.putNumber("/intake/pivotMotorABS", pivotMotor.getAbsoluteEncoder().getPosition());
-    SmartDashboard.putNumber("/intake/pivotMotor", getAngle());
-    SmartDashboard.putBoolean("/intake/intaking", getIsIntaking());
-    SmartDashboard.putNumber("/intake/current", pivotMotor.getOutputCurrent());
+    // SmartDashboard.putNumber("/intake/pivotMotorABS", pivotMotor.getAbsoluteEncoder().getPosition());
+    // SmartDashboard.putNumber("/intake/pivotMotor", getAngle());
+    // SmartDashboard.putBoolean("/intake/intaking", getIsIntaking());
+    // SmartDashboard.putNumber("/intake/current", pivotMotor.getOutputCurrent());
     SmartDashboard.putBoolean("/intake/beambreak", !beambreak.get());
-
-    SmartDashboard.putNumber("/intake/passthroughVelocity", passthroughLeft.getEncoder().getVelocity());
+    // SmartDashboard.putBoolean("/intake/intaking", intaking);
+    // SmartDashboard.putNumber("/intake/passthroughVelocity", passthroughLeft.getEncoder().getVelocity());
 
     systemState = handleStateTransitions();
     ApplyStates();
@@ -127,7 +127,9 @@ public class IntakeSubsystem extends SubsystemBase {
 
   public SparkBaseConfig rollerConfig(){
     SparkBaseConfig rollerConf = new SparkMaxConfig()
-      .smartCurrentLimit(40);
+      .smartCurrentLimit(40)
+      .idleMode(IdleMode.kCoast)
+    ;
     return rollerConf;
   }
 
@@ -191,7 +193,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
   // pid to 157
   public void PidToZero(){
-    rollerMotor.setVoltage(0);
+    stopRollers();
     if(pivotMotor.getAbsoluteEncoder().getPosition()<140){
       pivotMotor.getClosedLoopController()
         .setReference(
@@ -212,7 +214,7 @@ public class IntakeSubsystem extends SubsystemBase {
     }
     }
     public void PidToSafe(){
-      rollerMotor.setVoltage(0);
+      stopRollers();
       if(pivotMotor.getAbsoluteEncoder().getPosition()<135){
         pivotMotor.getClosedLoopController()
           .setReference(
@@ -236,14 +238,22 @@ public class IntakeSubsystem extends SubsystemBase {
   public void intakeStuff(){
     if(pivotMotor.getAbsoluteEncoder().getPosition()>130.0){
       pivotMotor.setVoltage(-0.5);
-      rollerMotor.setVoltage(-8.5);
+      stopRollers();
       stopPassthrough();
     }
     else{
       pivotMotor.setVoltage(0);
-      rollerMotor.setVoltage(-8.5);
+      rollStuff();
       passStuff();
     }
+  }
+
+  public void rollStuff(){
+    rollerMotor.setVoltage(-8.5);
+  }
+  
+  public void stopRollers(){
+    rollerMotor.setVoltage(0.0);
   }
 
   public void passStuff(){

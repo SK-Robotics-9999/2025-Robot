@@ -5,6 +5,7 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.ArmConstants;
 import frc.robot.Constants.ElevatorConstants;
@@ -24,6 +25,7 @@ public class SuperStructure extends SubsystemBase {
   public enum WantedSuperState{
     HOME,
     IDLE,
+    PREPARE_TO_INTAKE,
     PREPARE_TO_RECEIVE,
     CORAL_GROUND_INTAKE,
     CORAL_GROUND_RECEIVE,
@@ -44,6 +46,7 @@ public class SuperStructure extends SubsystemBase {
     HOME,
     IDLE,
     PREPARE_TO_INTAKE,
+    PREPARE_TO_RECEIVE,
     CORAL_GROUND_INTAKE,
     CORAL_GROUND_RECEIVE,
     PREPARE_TO_PLACE,
@@ -101,15 +104,12 @@ public class SuperStructure extends SubsystemBase {
         return currentSuperState = CurrentSuperState.IDLE;
       case HOME:
         return CurrentSuperState.HOME;
-      case PREPARE_TO_RECEIVE:
+      case PREPARE_TO_INTAKE:
         return CurrentSuperState.PREPARE_TO_INTAKE;
+      case PREPARE_TO_RECEIVE:
+        return CurrentSuperState.PREPARE_TO_RECEIVE;
       case CORAL_GROUND_INTAKE:
-        // if (previousSuperState==CurrentSuperState.PREPARE_TO_INTAKE){
-          return CurrentSuperState.CORAL_GROUND_INTAKE;
-        // }
-        // else{
-        //   return CurrentSuperState.IDLE;
-        // }
+        return CurrentSuperState.CORAL_GROUND_INTAKE;
       case CORAL_GROUND_RECEIVE:
         return CurrentSuperState.CORAL_GROUND_RECEIVE;
       case PREPARE_TO_PLACE:
@@ -164,19 +164,9 @@ public class SuperStructure extends SubsystemBase {
 }
 
   private void ApplyStates(){
-    if (elevatorSubsystem.getArmCanDown()){
-      armNeedsToWait = false;
-    }
-    else{
-      armNeedsToWait=true;
-    }
+    armNeedsToWait = !elevatorSubsystem.getArmCanDown();
 
-    if (armSubsystem.getArmIsSafe()){
-      elevatorNeedsToWait=false;
-    }
-    else{
-      elevatorNeedsToWait=true;
-    }
+    elevatorNeedsToWait = !armSubsystem.getArmIsSafe();
 
     switch(currentSuperState){
       case IDLE:
@@ -196,6 +186,9 @@ public class SuperStructure extends SubsystemBase {
         break;
       case PREPARE_TO_PLACE:
         prepareToPlace();
+        break;
+      case PREPARE_TO_RECEIVE:
+        prepareToReceive();
         break;
       case MOVE_TO_L4:
         moveToL4();
@@ -246,14 +239,14 @@ public class SuperStructure extends SubsystemBase {
       armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
-
+  
   
   private void coralGroundIntake(){
-    //Add all the stuff for other subsystem states
-    armSubsystem.SetWantedState(ArmSubsystem.WantedState.IDLE);
-    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.IDLE);
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.preIntake);
+    if (!armNeedsToWait){
+      armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
+    }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.INTAKE);
   }
   
@@ -270,6 +263,15 @@ public class SuperStructure extends SubsystemBase {
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.postIntake);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.POST_INTAKE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
+  }
+
+  private void prepareToReceive(){
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.preIntake);
+    if (!armNeedsToWait){
+      armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
+    }
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
   }
 
