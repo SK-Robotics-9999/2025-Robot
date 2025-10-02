@@ -66,15 +66,13 @@ public class VisionSubsystem extends SubsystemBase {
   );
 
   private final double objectHeight = Inches.of(37.792).in(Meters);
-  private final double objectPitch = Math.toRadians(25.77);
-  private final double objectYaw = Math.toRadians(44.08);
-  //not right
+  //robotToCamera
   Transform3d objectCameraTransform = new Transform3d(new Translation3d(
       Inches.of(6.182).in(Meters),
       Inches.of(-7.582).in(Meters),
       objectHeight
     ),
-    new Rotation3d(0.0, objectPitch, objectYaw)
+    new Rotation3d(0.0, Math.toRadians(25.77), Math.toRadians(14.08))
   );
 
   Field2d visionField = new Field2d();
@@ -95,16 +93,15 @@ public class VisionSubsystem extends SubsystemBase {
       leftCamera = Optional.empty();
     }
 
-    // try{
-    //   objectCamera = Optional.of(new PhotonCamera("object_cam"));
-    //   if (!objectCamera.get().isConnected()) {
-    //     objectCamera = Optional.empty();
-    //   }
-    // }catch(Error e){
-    //   System.err.print(e);
-    //   objectCamera = Optional.empty();
-    // }
-    objectCamera = Optional.empty();
+    try{
+      objectCamera = Optional.of(new PhotonCamera("object_cam"));
+      if (!objectCamera.get().isConnected()) {
+        objectCamera = Optional.empty();
+      }
+    }catch(Error e){
+      System.err.print(e);
+      objectCamera = Optional.empty();
+    }
    
   }
 
@@ -189,30 +186,34 @@ public class VisionSubsystem extends SubsystemBase {
 
     PhotonTrackedTarget target = result.getBestTarget();
 
-    //degrees, angle from horizontal
-    double pitch = target.getPitch()-Math.toDegrees(objectPitch);
-    SmartDashboard.putNumber("/vision/object/pitch", pitch);
+    double pitch = -Math.toRadians(target.getPitch()); // in radians, need to check this
+    // SmartDashboard.putNumber("vision/object/pitch", pitch);
+    double yaw = -Math.toRadians(target.getYaw()); // in radians
 
-    //pls check this geometry
+    double truePitch = pitch + objectCameraTransform.getRotation().getY();
+    // SmartDashboard.putNumber("vision/object/truePitch", Math.toDegrees(truePitch));
+
+    double zDiff = objectCameraTransform.getTranslation().getZ()-Inches.of(4.5).in(Meters);
+
+    double range = zDiff / Math.tan(truePitch); //?, pls check
+    // SmartDashboard.putNumber("vision/object/range", range);
     
-    //height of camera - height of middle of coral
-    final double height = objectHeight-Inches.of(4.5/2.0).in(Meters);
+    double xCam = range * Math.cos(yaw);
+    double yCam = range * Math.sin(yaw);
+    // SmartDashboard.putNumber("vision/object/xCam", xCam);
+    // SmartDashboard.putNumber("vision/object/yCam", yCam);
 
-    //due to alternate interior angles, our pitch is equivalent to the angle starting from the ground-coral to coral-camera
-    //opposite(height)/x distance = tan(pitch), opposite/tan(pitch)
-    double relativeX = height/Math.tan(Math.toRadians(pitch));
-
-    double hypot = Math.hypot(relativeX, height);
-
-    double yaw = target.getYaw();
-
-    double relativeY = Math.tan(yaw)*hypot;
-
-    Translation2d relativeTranslation = new Translation2d(relativeX, relativeY);
-
-    Translation2d robotRelativeTranslation = relativeTranslation.rotateAround(objectCameraTransform.getTranslation().toTranslation2d(), new Rotation2d(-yaw));
-
-    return Optional.of(robotRelativeTranslation);
+    
+    Translation2d cameraRelative = new Translation2d(xCam, yCam);
+    
+    // Rotate into robot frame and offset by camera’s position
+    Translation2d robotHeadingRelative = cameraRelative.rotateBy(new Rotation2d(objectCameraTransform.getRotation().getZ()));
+    // visionField.getObject("camToTargetTranslation").setPose(new Pose2d(robotHeadingRelative, new Rotation2d()));
+    
+    Translation2d robotRelative = robotHeadingRelative.plus(objectCameraTransform.getTranslation().toTranslation2d());
+    // visionField.getObject("robotToTargetTranslation").setPose(new Pose2d(robotRelative, new Rotation2d()));
+    
+    return Optional.of(robotRelative);
   }
 
 }
