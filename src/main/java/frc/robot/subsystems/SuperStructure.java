@@ -40,6 +40,10 @@ public class SuperStructure extends SubsystemBase {
     PLACE_L2,
     PLACE_L1,
     PLACE_BARGE,
+    ALGAE_INTAKE_L3,
+    ALGAE_INTAKE_L2,
+    PULLOUT_ALGAE_INTAKE_L3,
+    PULLOUT_ALGAE_INTAKE_L2
   }
 
   public enum CurrentSuperState{
@@ -60,6 +64,10 @@ public class SuperStructure extends SubsystemBase {
     PLACE_L2,
     PLACE_L1,
     PLACE_BARGE,
+    ALGAE_INTAKE_L3,
+    ALGAE_INTAKE_L2,
+    PULLOUT_ALGAE_INTAKE_L3,
+    PULLOUT_ALGAE_INTAKE_L2
   }
 
   private WantedSuperState wantedSuperState = WantedSuperState.IDLE;
@@ -91,6 +99,8 @@ public class SuperStructure extends SubsystemBase {
 
     currentSuperState = handleStateTransitions();
     ApplyStates();
+
+    SmartDashboard.putString("superStructure/SystemState", currentSuperState.toString());
 
     // This method will be called once per scheduler run
   }
@@ -124,6 +134,10 @@ public class SuperStructure extends SubsystemBase {
         return CurrentSuperState.MOVE_TO_L1;
       case MOVE_TO_BARGE:
         return CurrentSuperState.MOVE_TO_BARGE;
+      case ALGAE_INTAKE_L2:
+        return CurrentSuperState.ALGAE_INTAKE_L2;
+      case ALGAE_INTAKE_L3:
+        return CurrentSuperState.ALGAE_INTAKE_L3;
       case PLACE_L4:
         if(previousSuperState==CurrentSuperState.MOVE_TO_L4){
           return CurrentSuperState.PLACE_L4;
@@ -152,13 +166,28 @@ public class SuperStructure extends SubsystemBase {
         else{
           return CurrentSuperState.IDLE;
         }      
-        case PLACE_BARGE:
-          if(previousSuperState==CurrentSuperState.MOVE_TO_BARGE){
-            return CurrentSuperState.PLACE_BARGE;
-          }
-          else{
-            return CurrentSuperState.IDLE;
-          }
+      case PLACE_BARGE:
+        if(previousSuperState==CurrentSuperState.MOVE_TO_BARGE){
+          return CurrentSuperState.PLACE_BARGE;
+        }
+        else{
+          return CurrentSuperState.IDLE;
+        }
+        case PULLOUT_ALGAE_INTAKE_L2:
+        if(previousSuperState==CurrentSuperState.ALGAE_INTAKE_L2){
+          return CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2;
+        }
+        else{
+          return CurrentSuperState.IDLE;
+        }
+        case PULLOUT_ALGAE_INTAKE_L3:
+        if(previousSuperState==CurrentSuperState.ALGAE_INTAKE_L3){
+          return CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3;
+        }
+        else{
+          return CurrentSuperState.IDLE;
+        }
+        
     }
     return CurrentSuperState.IDLE;
 }
@@ -205,6 +234,12 @@ public class SuperStructure extends SubsystemBase {
       case MOVE_TO_BARGE:
         moveToBarge();
         break;
+      case ALGAE_INTAKE_L2:
+        algaeIntakeL2();
+        break;
+      case ALGAE_INTAKE_L3:
+        algaeIntakeL3();
+        break;
       case PLACE_L4:
         placeAtL4();
         break;
@@ -219,6 +254,12 @@ public class SuperStructure extends SubsystemBase {
         break;
       case PLACE_BARGE:
         placeAtBarge();
+        break;
+      case PULLOUT_ALGAE_INTAKE_L2:
+        pulllutAlgaeIntakeL2();
+        break;
+      case PULLOUT_ALGAE_INTAKE_L3:
+        pulloutAlgaeIntakeL3();
         break;
     }
   }
@@ -256,14 +297,14 @@ public class SuperStructure extends SubsystemBase {
       armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.POST_INTAKE);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void prepareToPlace(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.postIntake);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.POST_INTAKE);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void prepareToReceive(){
@@ -272,21 +313,21 @@ public class SuperStructure extends SubsystemBase {
       armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void moveToL4(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL4);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL4);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void moveToL3(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL3);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL3);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void moveToL2(){
@@ -296,24 +337,25 @@ public class SuperStructure extends SubsystemBase {
       elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL2);
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void moveToL1(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL1);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL1);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void moveToBarge(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.barge);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.barge);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
   }
 
   private void placeAtL4(){
+    SmartDashboard.putString("superStructure/state", "l4");
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.scoreL4);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.scoreL4);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
@@ -348,6 +390,36 @@ public class SuperStructure extends SubsystemBase {
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.barge);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
+  }
+
+  private void algaeIntakeL3(){
+    SmartDashboard.putString("superStructure/state", "algael3");
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.algael3);
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.algaeReefIntake);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
+  }
+  
+  private void algaeIntakeL2(){
+    SmartDashboard.putString("superStructure/state", "algael2");
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.algael2);
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.algaeReefIntake);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
+  }
+
+  private void pulloutAlgaeIntakeL3(){
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.pulloutAlgael3);
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.pulloutAlgaeReefIntake);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
+  }
+  
+  private void pulllutAlgaeIntakeL2(){
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.pulloutAlgael2);
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.pulloutAlgaeReefIntake);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
   }
   
   public CurrentSuperState getCurrentSuperState(){

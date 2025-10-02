@@ -138,6 +138,7 @@ public class ElevatorSubsystem extends SubsystemBase {
     // SmartDashboard.putBoolean("/elevator/limitSwitchEnabled", !bottomLimitSwitch.get());
     // SmartDashboard.putBoolean("/elevator/hasReset", hasReset);
     // SmartDashboard.putBoolean("/elevator/motorsInverted", elevatorMotorBack.configAccessor.getFollowerModeInverted());
+    SmartDashboard.putNumber("/elevator/target", trapGoal.position);
 
     // SmartDashboard.putNumber("/elevator/voltage", elevatorMotorFront.getAppliedOutput()*elevatorMotorFront.getBusVoltage());
     // SmartDashboard.putNumber("/elevator/voltageBack", -elevatorMotorBack.getAppliedOutput()*elevatorMotorBack.getBusVoltage());
@@ -241,6 +242,7 @@ public class ElevatorSubsystem extends SubsystemBase {
 
   //intended to be put in a run command, ff only calculates once
   public void setPIDtoPosition(DoubleSupplier setpoint){
+    // setpoint =  ()->MathUtil.clamp(setpoint.getAsDouble(), kLowerLimit, kUpperLimit);
     double ff = elevatorFF.calculate(0.0, 0.0); // just get the kg essentially
     elevatorMotorFront.getClosedLoopController()
       .setReference(

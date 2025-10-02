@@ -29,11 +29,12 @@ public class FieldNavigation {
     //These are right relative from the tag's pose facing out  from the reef
     static Transform2d coralLeft = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, Inches.of(6.5).in(Meters), new Rotation2d(Degrees.of(0))));
     static Transform2d coralRight = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, Inches.of(-6.5).in(Meters), new Rotation2d(Degrees.of(0))));
-    static Transform2d coralMid = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, 0.0, new Rotation2d(Degrees.of(0))));
+    static Transform2d coralMid = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX-Inches.of(4.5).in(Meters), 0.0, new Rotation2d(Degrees.of(0))));
     static Transform2d reefAlgae = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, 0, new Rotation2d(Degrees.of(0))));
     static Transform2d coralSource = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, 0, new Rotation2d(Degrees.of(180))));
     static Transform2d coralApproachOffsetLeft = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, Inches.of(6.5).in(Meters), new Rotation2d(Degrees.of(0))));
     static Transform2d coralApproachOffsetRight = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, Inches.of(-6.5).in(Meters), new Rotation2d(Degrees.of(0))));
+    static Transform2d coralApproachOffsetMid = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, 0.0, new Rotation2d(Degrees.of(0))));
 
 
 
@@ -86,16 +87,24 @@ public class FieldNavigation {
         return currentPose.nearest(tagsProcessor);
     }
 
+    
+    public static Pose2d getCoralMid(Pose2d currentPose){
+        var nearest = currentPose.nearest(tagsReef);
+        return nearest.transformBy(coralMid);
+    }
+    
+    public static Pose2d getOffsetCoralMid(Pose2d currentPose){
+        var nearest = currentPose.nearest(tagsReef);
+        return nearest.transformBy(coralApproachOffsetMid);
+    }
+    
     //FROM PERSPECTIVE OF APRIL TAG, if we look from outside it is right
     public static Pose2d getCoralLeft(Pose2d currentPose){
         var nearest = currentPose.nearest(tagsReef);
         return nearest.transformBy(coralLeft);
     }
 
-    public static Pose2d getCoralMid(Pose2d currentPose){
-        var nearest = currentPose.nearest(tagsReef);
-        return nearest.transformBy(coralMid);
-    }
+    
 
     public static Pose2d getOffsetCoralLeft(Pose2d currentPose){
         var nearest = currentPose.nearest(tagsReef);

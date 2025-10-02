@@ -25,7 +25,8 @@
 
         SparkMax suctionMotor = new SparkMax(MotorConstants.kSuctionID, MotorType.kBrushless);
 
-        private final double targetPressure = 30.0;
+        private final double targetPressureCoral = 30.0;
+        private final double targetPressureAlgae = 40.0;
 
         PIDController pid = new PIDController(12.0/10.0, 0, 0);
 
@@ -34,14 +35,16 @@
         public static enum WantedState{
             HOME,
             IDLE,
-            INTAKE,
+            INTAKE_CORAL,
+            INTAKE_ALGAE,
             RELEASE
           }
         
           public static enum SystemState{
             HOMING,
             IDLING,
-            INTAKING,
+            INTAKING_CORAL,
+            INTAKING_ALGAE,
             RELEASE
           }
 
@@ -81,8 +84,10 @@
                 }
               case IDLE:
                 return SystemState.IDLING;
-              case INTAKE:
-                return SystemState.INTAKING;
+              case INTAKE_CORAL:
+                return SystemState.INTAKING_CORAL;
+              case INTAKE_ALGAE:
+                return SystemState.INTAKING_ALGAE;
               case RELEASE:
                 return SystemState.RELEASE;
             }
@@ -94,12 +99,17 @@
                 case HOMING:
                     releaseSolenoid(false);
                     stop();
+                    break;
                 case IDLING:
                 //nothing
                     break;
-                case INTAKING:
+                case INTAKING_CORAL:
                     releaseSolenoid(false);
-                    pidToSuction();
+                    pidToSuctionCoral();
+                    break;
+                case INTAKING_ALGAE:
+                    releaseSolenoid(false);
+                    pidToSuctionAlgae();
                     break;
                 case RELEASE:
                     releaseSolenoid(true); //TODO: make this run only once on change
@@ -120,8 +130,15 @@
             return pressure;
         }
 
-        public void pidToSuction(){
-            double output = pid.calculate(getPressure(), targetPressure);
+        public void pidToSuctionCoral(){
+            double output = pid.calculate(getPressure(), targetPressureCoral);
+            output = MathUtil.clamp(output, 0, 12.0);
+            suctionMotor.setVoltage(output);
+            
+        }
+
+        public void pidToSuctionAlgae(){
+            double output = pid.calculate(getPressure(), targetPressureAlgae);
             output = MathUtil.clamp(output, 0, 12.0);
             suctionMotor.setVoltage(output);
             

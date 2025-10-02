@@ -30,6 +30,8 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.FieldNavigation;
 import swervelib.SwerveDrive;
 import swervelib.parser.SwerveParser;
+import swervelib.telemetry.SwerveDriveTelemetry;
+import swervelib.telemetry.SwerveDriveTelemetry.TelemetryVerbosity;
 
 
 public class SwerveSubsystem extends SubsystemBase {
@@ -90,6 +92,7 @@ public class SwerveSubsystem extends SubsystemBase {
           throw new RuntimeException(e);
 
   }
+  SwerveDriveTelemetry.verbosity = TelemetryVerbosity.NONE;
 
   swerveDrive.resetOdometry(new Pose2d(1, 1, new Rotation2d()));
 }

@@ -12,6 +12,7 @@ import static edu.wpi.first.units.Units.Second;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 
+import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.revrobotics.spark.ClosedLoopSlot;
@@ -57,9 +58,15 @@ public class ArmSubsystem extends SubsystemBase {
 
   private final double maxVelocity = 450.0; //degrees per second, i hope
   private final double maxAccel = 750.0;
+  private final double maxAlgaeAccel = 375.0;
   private final TrapezoidProfile trapProfile = new TrapezoidProfile(
     new TrapezoidProfile.Constraints(maxVelocity, maxAccel)
   );
+  private final TrapezoidProfile trapAlgaeProfile = new TrapezoidProfile(
+    new TrapezoidProfile.Constraints(maxVelocity, maxAlgaeAccel)
+  );
+
+  BooleanSupplier isAlgae = ()->false;
 
   ArmFeedforward armFF = new ArmFeedforward(0.03, 0.12, 0.0264);//i have no idea if the kv is good, but hope it works...
 
@@ -92,7 +99,7 @@ public class ArmSubsystem extends SubsystemBase {
   private SystemState systemState = SystemState.IDLING;
 
   /** Creates a new ArmSubsystem. */
-  public ArmSubsystem() {
+  public ArmSubsystem(BooleanSupplier isAlgae) {
     armMotor.configure(getArmConfig(), ResetMode.kResetSafeParameters, PersistMode.kPersistParameters);
 
     syncEncoders();
@@ -102,6 +109,7 @@ public class ArmSubsystem extends SubsystemBase {
       new InstantCommand(this::syncEncoders)
     );
 
+    this.isAlgae=isAlgae;
   }
   
   
@@ -280,7 +288,8 @@ public class ArmSubsystem extends SubsystemBase {
   // }
 
   public void setArmAngleTrap(){
-    trapState = trapProfile.calculate(0.02, trapState, trapGoal); //assumes we follow along the trap well, in theory we should be returning our actual but its ok
+    TrapezoidProfile profile = isAlgae.getAsBoolean() ? trapAlgaeProfile : trapProfile;
+    trapState = profile.calculate(0.02, trapState, trapGoal); //assumes we follow along the trap well, in theory we should be returning our actual but its ok
 
     double ff = armFF.calculate(Radians.convertFrom(armMotor.getEncoder().getPosition(), Degrees), RadiansPerSecond.convertFrom(trapState.velocity, DegreesPerSecond));
     armMotor.getClosedLoopController()

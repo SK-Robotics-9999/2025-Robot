@@ -24,6 +24,7 @@ import frc.robot.subsystems.ElevatorSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.SuctionSubsystem;
 import frc.robot.subsystems.SuperStructure;
+import frc.robot.subsystems.SuperStructure.CurrentSuperState;
 import frc.robot.subsystems.SuperStructure.WantedSuperState;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
@@ -35,9 +36,21 @@ import frc.robot.subsystems.VisionSubsystem;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
+  BooleanSupplier isRed = () -> {
+    var alliance = DriverStation.getAlliance();
+    if (alliance.isPresent()) {
+      return alliance.get() == DriverStation.Alliance.Red;
+    }
+    return false;
+  };
+
+  private boolean hasCoral=false;//TODO: technically true at the start of auto, will fix after
+
+  private boolean coralMode=true;
+
   // The robot's subsystems and commands are defined here...
   SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
-  ArmSubsystem armSubsystem = new ArmSubsystem();
+  ArmSubsystem armSubsystem = new ArmSubsystem(()->!coralMode);
   ElevatorSubsystem elevatorSubsystem = new ElevatorSubsystem();
   IntakeSubsystem intakeSubsystem = new IntakeSubsystem();
   SuctionSubsystem suctionSubsystem = new SuctionSubsystem();
@@ -48,15 +61,6 @@ public class RobotContainer {
   
   CommandXboxController driver = new CommandXboxController(0);
 
-  BooleanSupplier isRed = () -> {
-    var alliance = DriverStation.getAlliance();
-    if (alliance.isPresent()) {
-      return alliance.get() == DriverStation.Alliance.Red;
-    }
-    return false;
-  };
-
-  private boolean hasCoral=false;//TODO: technically true at the start of auto, will fix after
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -95,7 +99,8 @@ public class RobotContainer {
       ()->-driver.getRightX()
     );
 
-    driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
+    // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
+    driver.povRight().onTrue(new InstantCommand(()->coralMode=!coralMode));
 
     //intake
     driver.leftTrigger()
@@ -128,11 +133,26 @@ public class RobotContainer {
         ()->-driver.getRightX()
       ))
     )
-    .onTrue(new SequentialCommandGroup(
-      waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())),
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
-      waitUntil(intakeSubsystem::hasCoral,()->!driver.rightTrigger().getAsBoolean(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_INTAKE),superStructure)
+    .onTrue(new ConditionalCommand(
+      new SequentialCommandGroup(
+        waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
+        waitUntil(intakeSubsystem::hasCoral,()->!driver.rightTrigger().getAsBoolean(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_INTAKE),superStructure)
+      ),
+
+      new InstantCommand(()->{
+        switch(superStructure.getCurrentSuperState()){
+          case ALGAE_INTAKE_L2:
+            superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L2);
+            break;
+          case ALGAE_INTAKE_L3:
+            superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L3);
+            break;
+        }
+      }),
+
+      ()->coralMode
     ));
 
       //Move To l1
@@ -142,7 +162,6 @@ public class RobotContainer {
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
-        new WaitCommand(0.5),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
         new InstantCommand(()->hasCoral=true)
@@ -154,7 +173,7 @@ public class RobotContainer {
       );
       
       //Move To l2
-      driver.b().onTrue(
+      driver.b().onTrue(new ConditionalCommand(
       new SequentialCommandGroup(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
@@ -167,17 +186,18 @@ public class RobotContainer {
       .until(()->hasCoral)
       .andThen(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L2),superStructure)
-      )
-    );
+      ),
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L2), superStructure),
+      ()->coralMode
+      ));
 
     //Move To l3
-    driver.x().onTrue(
+    driver.x().onTrue(new ConditionalCommand(
       new SequentialCommandGroup(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
-        new WaitCommand(0.5),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
         new InstantCommand(()->hasCoral=true)
@@ -185,8 +205,10 @@ public class RobotContainer {
       .until(()->hasCoral)
       .andThen(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L3),superStructure)
-      )
-    );
+      ),
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3),superStructure),
+      ()->coralMode
+    ));
     //Move To l4
     driver.y().onTrue(
       new SequentialCommandGroup(
@@ -194,7 +216,6 @@ public class RobotContainer {
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
-        new WaitCommand(0.5),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
         new InstantCommand(()->hasCoral=true)
@@ -244,11 +265,14 @@ public class RobotContainer {
       .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
     );
 
-    // driver.start().whileTrue(new SequentialCommandGroup(
-    //   new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getReefAlgae(swerveSubsystem.getPose())))
-
-
-    // ));
+    driver.start().whileTrue(new SequentialCommandGroup(
+      new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralMid(swerveSubsystem.getPose()))),
+      waitUntil(swerveSubsystem::getOnTarget),
+      new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralMid(swerveSubsystem.getPose())), swerveSubsystem),
+      waitUntil(swerveSubsystem::getOnTarget)
+    )
+      .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
+    );
 
     driver.povUp().onTrue(new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure));
   }
@@ -261,5 +285,9 @@ public class RobotContainer {
   public Command getAutonomousCommand() {
     // An example command will be run in autonomous
     return new InstantCommand();
+  }
+
+  public boolean getCoralMode(){
+    return coralMode;
   }
 }
