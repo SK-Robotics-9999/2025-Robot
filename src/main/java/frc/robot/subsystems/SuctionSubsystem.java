@@ -83,6 +83,7 @@ import com.revrobotics.spark.SparkMax;
                 if(previousWantedState != WantedState.HOME){
                     return SystemState.HOMING;
                 }
+                return SystemState.IDLING;
               case IDLE:
                 return SystemState.IDLING;
               case INTAKE_CORAL:
@@ -159,7 +160,7 @@ import com.revrobotics.spark.SparkMax;
 
         //for coral
         public boolean getSuctionGood(){
-            return getPressure()>20.0;
+            return getPressure()>25.0;
         }
 
         public void SetWantedState(WantedState wantedState){

@@ -142,51 +142,37 @@ public class SuperStructure extends SubsystemBase {
         if(previousSuperState==CurrentSuperState.MOVE_TO_L4){
           return CurrentSuperState.PLACE_L4;
         }
-        else{
-          return CurrentSuperState.IDLE;
-        }
+        return CurrentSuperState.IDLE;
       case PLACE_L3:
         if(previousSuperState==CurrentSuperState.MOVE_TO_L3){
           return CurrentSuperState.PLACE_L3;
         }
-        else{
-          return CurrentSuperState.IDLE;
-        }
+        return CurrentSuperState.IDLE;
       case PLACE_L2:
         if(previousSuperState==CurrentSuperState.MOVE_TO_L2){
           return CurrentSuperState.PLACE_L2;
         }
-        else{
-          return CurrentSuperState.IDLE;
-        }
+        return CurrentSuperState.IDLE;
       case PLACE_L1:
         if(previousSuperState==CurrentSuperState.MOVE_TO_L1){
           return CurrentSuperState.PLACE_L1;
         }
-        else{
-          return CurrentSuperState.IDLE;
-        }      
+        return CurrentSuperState.IDLE;
       case PLACE_BARGE:
         if(previousSuperState==CurrentSuperState.MOVE_TO_BARGE){
           return CurrentSuperState.PLACE_BARGE;
         }
-        else{
-          return CurrentSuperState.IDLE;
-        }
-        case PULLOUT_ALGAE_INTAKE_L2:
+        return CurrentSuperState.IDLE;
+      case PULLOUT_ALGAE_INTAKE_L2:
         if(previousSuperState==CurrentSuperState.ALGAE_INTAKE_L2){
           return CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2;
         }
-        else{
-          return CurrentSuperState.IDLE;
-        }
-        case PULLOUT_ALGAE_INTAKE_L3:
+        return CurrentSuperState.IDLE;
+      case PULLOUT_ALGAE_INTAKE_L3:
         if(previousSuperState==CurrentSuperState.ALGAE_INTAKE_L3){
           return CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3;
         }
-        else{
-          return CurrentSuperState.IDLE;
-        }
+        return CurrentSuperState.IDLE;
         
     }
     return CurrentSuperState.IDLE;
@@ -424,6 +410,16 @@ public class SuperStructure extends SubsystemBase {
   
   public CurrentSuperState getCurrentSuperState(){
     return currentSuperState;
+  }
+
+  public boolean getIsAtReefState(){
+    return currentSuperState == CurrentSuperState.ALGAE_INTAKE_L2 
+    || currentSuperState == CurrentSuperState.ALGAE_INTAKE_L3
+    || currentSuperState == CurrentSuperState.MOVE_TO_L1
+    || currentSuperState == CurrentSuperState.MOVE_TO_L2
+    || currentSuperState == CurrentSuperState.MOVE_TO_L3
+    || currentSuperState == CurrentSuperState.MOVE_TO_L4
+    ;
   }
 
   public void SetWantedState(SuperStructure.WantedSuperState wantedSuperState){

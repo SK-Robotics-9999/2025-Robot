@@ -114,10 +114,10 @@ public class VisionSubsystem extends SubsystemBase {
     SmartDashboard.putBoolean("vision/leftCameraPresent", leftCamera.isPresent());
     SmartDashboard.putBoolean("vision/objectCameraPresent", objectCamera.isPresent());
 
-    Optional<Translation2d> object = getObjectTranslationRelative();
-    if(object.isPresent()){
-      visionField.getObject("relativePose").setPose(new Pose2d(object.get(), new Rotation2d()));
-    }
+    // Optional<Translation2d> object = getObjectTranslationRelative();
+    // if(object.isPresent()){
+    //   visionField.getObject("relativePose").setPose(new Pose2d(object.get(), new Rotation2d()));
+    // }
     visionField.setRobotPose(swerve.getPose());
 
     updateOdometry();
@@ -179,9 +179,9 @@ public class VisionSubsystem extends SubsystemBase {
     
     List<PhotonPipelineResult> results = objectCamera.get().getAllUnreadResults();
     if(results.isEmpty()){return Optional.empty();}
-
+    
     PhotonPipelineResult result = results.get(results.size()-1);
-
+    
     if(!result.hasTargets()){return Optional.empty();}
 
     PhotonTrackedTarget target = result.getBestTarget();
