@@ -43,7 +43,8 @@ public class SuperStructure extends SubsystemBase {
     ALGAE_INTAKE_L3,
     ALGAE_INTAKE_L2,
     PULLOUT_ALGAE_INTAKE_L3,
-    PULLOUT_ALGAE_INTAKE_L2
+    PULLOUT_ALGAE_INTAKE_L2,
+    EJECT
   }
 
   public enum CurrentSuperState{
@@ -67,7 +68,8 @@ public class SuperStructure extends SubsystemBase {
     ALGAE_INTAKE_L3,
     ALGAE_INTAKE_L2,
     PULLOUT_ALGAE_INTAKE_L3,
-    PULLOUT_ALGAE_INTAKE_L2
+    PULLOUT_ALGAE_INTAKE_L2,
+    EJECT
   }
 
   private WantedSuperState wantedSuperState = WantedSuperState.IDLE;
@@ -124,6 +126,8 @@ public class SuperStructure extends SubsystemBase {
         return CurrentSuperState.CORAL_GROUND_RECEIVE;
       case PREPARE_TO_PLACE:
         return CurrentSuperState.PREPARE_TO_PLACE;
+      case EJECT:
+        return CurrentSuperState.EJECT;
       case MOVE_TO_L4:
         return CurrentSuperState.MOVE_TO_L4;
       case MOVE_TO_L3:
@@ -247,6 +251,9 @@ public class SuperStructure extends SubsystemBase {
       case PULLOUT_ALGAE_INTAKE_L3:
         pulloutAlgaeIntakeL3();
         break;
+      case EJECT:
+        eject();
+        break;
     }
   }
 
@@ -300,6 +307,13 @@ public class SuperStructure extends SubsystemBase {
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
+  }
+
+  private void eject(){
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.EJECT);
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.IDLE);
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.IDLE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.IDLE);
   }
 
   private void moveToL4(){

@@ -53,7 +53,7 @@ public final class Constants {
   }
   
   public static class ArmConstants{
-    public static final double intakeAngle = -90;
+    public static final double intakeAngle = -91.5;
     public static final double lowestAtZeroElevator = -35;
     public static final double safeL2 = -5;
     //THESE ALLLLLL NEEEEEED TO BE CHANGED

@@ -327,6 +327,9 @@ public class RobotContainer {
 
     driver.povUp().onTrue(new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure));
 
+    driver.povDown().onTrue(
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.EJECT))
+    );
     // driver.povLeft().whileTrue(
     //   new RunCommand(()->{
     //     Optional<Translation2d> coral = visionSubsystem.getObjectTranslationRelative();

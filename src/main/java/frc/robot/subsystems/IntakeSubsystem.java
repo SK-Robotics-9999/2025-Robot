@@ -47,13 +47,15 @@ public class IntakeSubsystem extends SubsystemBase {
     IDLE,
     INTAKE,
     POST_INTAKE,
+    EJECT
   }
 
   public enum SystemState{
     HOMING,
     IDLING,
     INTAKING,
-    POST_INTAKING
+    POST_INTAKING,
+    EJECTING
   }
 
   private WantedState wantedState = WantedState.HOME;
@@ -86,6 +88,8 @@ public class IntakeSubsystem extends SubsystemBase {
         return SystemState.INTAKING;
       case POST_INTAKE:
         return SystemState.POST_INTAKING;
+      case EJECT:
+        return SystemState.EJECTING;
     }
     return SystemState.IDLING;
   }
@@ -105,6 +109,11 @@ public class IntakeSubsystem extends SubsystemBase {
         break;
       case POST_INTAKING:
         PidToSafe();
+        stopPassthrough();
+        break;
+      case EJECTING:
+        intaking = false;
+        ejectStuff();
         stopPassthrough();
         break;
     }
@@ -129,7 +138,7 @@ public class IntakeSubsystem extends SubsystemBase {
   public SparkBaseConfig rollerConfig(){
     SparkBaseConfig rollerConf = new SparkMaxConfig()
       .smartCurrentLimit(40)
-      .idleMode(IdleMode.kCoast)
+      .idleMode(IdleMode.kBrake)
     ;
     return rollerConf;
   }
@@ -247,6 +256,11 @@ public class IntakeSubsystem extends SubsystemBase {
       rollStuff();
       passStuff();
     }
+  }
+
+  public void ejectStuff(){
+    pivotMotor.setVoltage(pivotMotor.getAbsoluteEncoder().getPosition()>130.0 ? -0.5 : 0.0);
+    rollerMotor.setVoltage(8.5);
   }
 
   public void rollStuff(){
