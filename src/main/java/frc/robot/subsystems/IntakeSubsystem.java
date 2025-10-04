@@ -79,6 +79,7 @@ public class IntakeSubsystem extends SubsystemBase {
         if(previousWantedState != WantedState.HOME){
             return SystemState.HOMING;
         }
+        return SystemState.IDLING;
       case IDLE:
         return SystemState.IDLING;
       case INTAKE:

@@ -91,6 +91,7 @@ public class ElevatorSubsystem extends SubsystemBase {
         if(previousWantedState != WantedState.HOME){
             return SystemState.HOMING;
         }
+        return SystemState.IDLING;
       case IDLE:
         return SystemState.IDLING;
       case MOVE_TO_POSITION:

@@ -164,7 +164,7 @@ public class FieldNavigation {
 
         Transform2d distance = currentPose.minus(nearest);
 
-        boolean tooCloseX = distance.getMeasureX().in(Inches)<(12.0+17.0);//17 is for bumper edge to robot center
+        boolean tooCloseX = distance.getMeasureX().in(Inches)<(16.0+17.0);//17 is for bumper edge to robot center
         SmartDashboard.putBoolean("swerve/tooCloseX", tooCloseX);
         
         boolean tooCloseY = Math.abs(distance.getMeasureY().in(Inches))<25.0;

@@ -102,8 +102,6 @@ public class SwerveSubsystem extends SubsystemBase {
 
   }
   SwerveDriveTelemetry.verbosity = TelemetryVerbosity.NONE;
-
-  swerveDrive.resetOdometry(new Pose2d(1, 1, new Rotation2d()));
 }
 
   @Override
@@ -380,6 +378,19 @@ public class SwerveSubsystem extends SubsystemBase {
     return swerveDrive.getRobotVelocity();
   }
 
+
+  //I have no idea if this works
+  public Pose2d getFieldRelativeIntakePose(Translation2d noteRobotRelative){
+    // final double middleToIntake = Inches.of(16.0).in(Meters);
+    final double middleToIntake = Inches.of(0).in(Meters);
+    Translation2d noteIntakeRelative = noteRobotRelative.minus(new Translation2d(middleToIntake, 0.0));
+    
+    //technically off by 16 inches, but whatever.  
+    Pose2d fieldRelativeNotePose = getPose().plus(new Transform2d(noteIntakeRelative, noteRobotRelative.getAngle()));
+    odometryField.getObject("coral").setPose(fieldRelativeNotePose); // whatevvvaaa
+    return fieldRelativeNotePose;
+
+  }
 
 
 }
