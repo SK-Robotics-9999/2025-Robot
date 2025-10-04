@@ -16,4 +16,80 @@ public final class Constants {
   public static class OperatorConstants {
     public static final int kDriverControllerPort = 0;
   }
+
+  public static class MotorConstants {
+    public static final int kVortexFreeSpeedRPM = 6784;
+    public static final int kNeoFreeSpeedRPM = 5676;
+
+    //CAN ID
+    public static final int kFLDriveID = 1;
+    public static final int kFRDriveID = 2;
+    public static final int kBLDriveID = 3;
+    public static final int kBRDriveID = 4;
+
+    public static final int kFLTurnID = 5;
+    public static final int kFRTurnID = 6;
+    public static final int kBLTurnID = 7;
+    public static final int kBRTurnID = 8;
+
+    public static final int kElevatorFrontID = 9; //in heading of robot
+    public static final int kElevatorBackID = 10;
+
+    public static final int kArmID = 11;
+    public static final int kSuctionID = 12;
+
+    public static final int kIntakePivotID = 13;
+    public static final int kIntakeRollersID = 14;
+
+    public static final int kFeederLeftID = 15; //in heading of robot
+    public static final int kFeederRightID = 16;
+
+    //Analog Port ID
+    public static final int kVacuumSensorPortID = 0; 
+  }
+
+  public static class DriveConstants {
+
+  }
+  
+  public static class ArmConstants{
+    public static final double intakeAngle = -90;
+    public static final double lowestAtZeroElevator = -35;
+    public static final double safeL2 = -5;
+    //THESE ALLLLLL NEEEEEED TO BE CHANGED
+    public static final double moveL1 = -15;
+    public static final double moveL2 = 20;
+    public static final double moveL3 = 20;
+    public static final double moveL4 = 35; 
+    public static final double scoreL1 = -15;
+    public static final double scoreL2 = 25;
+    public static final double scoreL3 = 25;
+    public static final double scoreL4 = 15;
+    public static final double barge = 90;
+    public static final double algaeReefIntake = 0;
+    public static final double pulloutAlgaeReefIntake = 10;
+    public static final double algaeGroundIntake = -30;
+
+  }
+
+  public static class ElevatorConstants{
+    public static final double preIntake = 20.0;
+    public static final double intake = 13.0;
+    public static final double postIntake = 20.0;
+    public static final double moveL4 = 48.0;
+    public static final double moveL3 = 30.0;
+    public static final double moveL2 = 14.0;
+    public static final double moveL1 = 13.0;
+    public static final double barge = 50.0;
+    public static final double scoreL4 = 42.0;
+    public static final double scoreL3 = 21.0;
+    public static final double scoreL2 = 5.0;
+    public static final double scoreL1 = 13.0;
+    public static final double algael3 = 30.5;
+    public static final double algael2 = 15.5;
+    public static final double pulloutAlgael3 = 33.0;
+    public static final double pulloutAlgael2 = 19.0;
+    public static final double algaeGround = 10.0;
+  }
+
 }
