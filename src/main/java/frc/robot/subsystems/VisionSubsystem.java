@@ -50,6 +50,8 @@ public class VisionSubsystem extends SubsystemBase {
   
   Optional<PhotonCamera> leftCamera;
 
+  Optional<PhotonCamera> rightCamera;
+
   Optional<PhotonCamera> objectCamera;
 
   Transform3d leftCameraTransform = new Transform3d(new Translation3d(
@@ -58,11 +60,24 @@ public class VisionSubsystem extends SubsystemBase {
     Inches.of(7.684).in(Meters)),
     new Rotation3d(0.0, Math.toRadians(-20.0), Math.toRadians(180.0))
   );
+
+  Transform3d rightCameraTransform = new Transform3d(new Translation3d(
+    Inches.of(-5.378).in(Meters),
+    Inches.of(-5.5).in(Meters), 
+    Inches.of(7.684).in(Meters)),
+    new Rotation3d(0.0, Math.toRadians(-20.0), Math.toRadians(180.0))
+  );
   
   PhotonPoseEstimator leftPoseEstimator = new PhotonPoseEstimator(
     aprilTagFieldLayout, 
     PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
     leftCameraTransform
+  );
+
+  PhotonPoseEstimator rightPoseEstimator = new PhotonPoseEstimator(
+    aprilTagFieldLayout, 
+    PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
+    rightCameraTransform
   );
 
   private final double objectHeight = Inches.of(37.792).in(Meters);
@@ -94,6 +109,16 @@ public class VisionSubsystem extends SubsystemBase {
     }
 
     try{
+      rightCamera = Optional.of(new PhotonCamera("right_cam"));
+      if (!rightCamera.get().isConnected()) {
+        rightCamera = Optional.empty();
+      }
+    }catch(Error e){
+      System.err.print(e);
+      rightCamera = Optional.empty();
+    }
+
+    try{
       objectCamera = Optional.of(new PhotonCamera("object_cam"));
       if (!objectCamera.get().isConnected()) {
         objectCamera = Optional.empty();
@@ -112,6 +137,7 @@ public class VisionSubsystem extends SubsystemBase {
     // This method will be called once per scheduler run
 
     SmartDashboard.putBoolean("vision/leftCameraPresent", leftCamera.isPresent());
+    SmartDashboard.putBoolean("vision/rightCameraPresent", rightCamera.isPresent());
     SmartDashboard.putBoolean("vision/objectCameraPresent", objectCamera.isPresent());
 
     Optional<Translation2d> object = getObjectTranslationRelative();
@@ -131,6 +157,9 @@ public class VisionSubsystem extends SubsystemBase {
     if(leftCamera.isPresent()){
       updateCameraSideOdometry(leftPoseEstimator, leftCamera.get());
     }
+    if(rightCamera.isPresent()){
+      updateCameraSideOdometry(rightPoseEstimator, rightCamera.get());
+    }
   }
 
   private void updateCameraSideOdometry(PhotonPoseEstimator photonPoseEstimator, PhotonCamera camera){
@@ -140,7 +169,7 @@ public class VisionSubsystem extends SubsystemBase {
       if (
         !result.hasTargets() 
         || result.getBestTarget().getPoseAmbiguity()>0.4 
-        || swerve.getVelocity()>0.5 
+        || swerve.getVelocity()>2 
         || swerve.getAngularVelocity()>Math.toRadians(45.0)
         || superStructure.isIntaking()
       ){

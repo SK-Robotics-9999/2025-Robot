@@ -284,9 +284,9 @@ public class RobotContainer {
     driver.leftBumper().whileTrue(new SequentialCommandGroup(
         //the right to the vision of the apriltag is left when facing at the apriltag.
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
-        waitUntil(swerveSubsystem::getOnTarget),
+        waitUntil(swerveSubsystem::getCloseEnough),
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
-        waitUntil(swerveSubsystem::getOnTarget)
+        waitUntil(()->false)
       )
       .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
     );
@@ -294,18 +294,18 @@ public class RobotContainer {
     driver.rightBumper().whileTrue(new SequentialCommandGroup(
         //the right to the vision of the apriltag is left when facing at the apriltag.
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
-        waitUntil(swerveSubsystem::getOnTarget),
+        waitUntil(swerveSubsystem::getCloseEnough),
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
-        waitUntil(swerveSubsystem::getOnTarget)
+        waitUntil(()->false)
       )
       .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
     );
 
-    driver.start().whileTrue(new SequentialCommandGroup(
+    driver.back().whileTrue(new SequentialCommandGroup(
       new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralMid(swerveSubsystem.getPose()))),
-      waitUntil(swerveSubsystem::getOnTarget),
+      waitUntil(swerveSubsystem::getCloseEnough),
       new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralMid(swerveSubsystem.getPose())), swerveSubsystem),
-      waitUntil(swerveSubsystem::getOnTarget)
+      waitUntil(()->false)
     )
       .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
     );

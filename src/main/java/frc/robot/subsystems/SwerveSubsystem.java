@@ -40,7 +40,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   
   double maximumSpeed = 5.033;
-  double maxVelocityForPID = 2.0; //meters
+  double maxVelocityForPID = 3.0; //meters
   double maxRotationalVelocityForPID = 4.0;
 
   SwerveDrive swerveDrive;
@@ -69,8 +69,8 @@ public class SwerveSubsystem extends SubsystemBase {
   private boolean assisterIsRobotRelative=false;
 
 
-  private final PIDController autoCont = new PIDController(3, 0, 0.1);
-  private final PIDController teleOpCont = new PIDController(3, 0, 0.1);
+  private final PIDController autoCont = new PIDController(4, 0, 0.1);
+  private final PIDController teleOpCont = new PIDController(4, 0, 0.1);
 
   private double staticFrictionConstant = 0.01;
 
@@ -307,7 +307,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     double xcomponent = angle.getCos()*velocity;
     double ycomponent = angle.getSin()*velocity;
-    double rotationalComponent = Math.min(delta.getRotation().getRadians()*2.0,
+    double rotationalComponent = Math.min(delta.getRotation().getRadians()*2.0*1.5,
       maxRotationalVelocityForPID);
 
     swerveDrive.setChassisSpeeds(new ChassisSpeeds(
@@ -358,11 +358,22 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public boolean getOnTarget(){
     Transform2d delta = targetPose.minus(getPose());
-
+    
     return delta.getTranslation().getNorm()<Inches.of(1.0).in(Meters) 
     && delta.getRotation().getDegrees()<3.0
     && systemState==SystemState.DRIVING_TO_POINT
     && getVelocity()<Inches.of(6.0).in(Meters);
+  }
+  
+  public boolean getCloseEnough(){
+    Transform2d delta = targetPose.minus(getPose());
+
+    return delta.getTranslation().getNorm()<Inches.of(3.0).in(Meters) 
+    && delta.getRotation().getDegrees()<10.0
+    && swerveDrive.getFieldVelocity().omegaRadiansPerSecond<1.0
+    && systemState==SystemState.DRIVING_TO_POINT
+    && getVelocity()<0.5;
+    
   }
 
   public ChassisSpeeds getRobotRelativeSpeeds(){
