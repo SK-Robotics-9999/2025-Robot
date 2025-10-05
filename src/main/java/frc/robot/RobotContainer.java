@@ -35,6 +35,7 @@ import frc.robot.subsystems.SuperStructure;
 import frc.robot.subsystems.SuperStructure.WantedSuperState;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.Autos;
 
 /** 
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -67,6 +68,8 @@ public class RobotContainer {
 
   VisionSubsystem visionSubsystem = new VisionSubsystem(swerveSubsystem, superStructure);
   // QuestNavSubsystem questNavSubsystem = new QuestNavSubsystem();
+
+  public final Autos autos = new Autos(swerveSubsystem, superStructure, elevatorSubsystem, armSubsystem, suctionSubsystem, intakeSubsystem);
   
   CommandXboxController driver = new CommandXboxController(0);
 
