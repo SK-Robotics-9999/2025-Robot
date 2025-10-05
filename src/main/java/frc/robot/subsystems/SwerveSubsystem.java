@@ -102,6 +102,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   }
   SwerveDriveTelemetry.verbosity = TelemetryVerbosity.NONE;
+  swerveDrive.resetOdometry(new Pose2d(1,1,new Rotation2d()));
 }
 
   @Override

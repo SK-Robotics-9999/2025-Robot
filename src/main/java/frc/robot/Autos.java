@@ -72,8 +72,8 @@ public class Autos {
         SmartDashboard.putData("AutoSelector/chooser",autoChooser);
         autoChooser.setDefaultOption("Select Auto",()->new InstantCommand());
 
-        autoChooser.addOption("L4 Left Auto", this::L4LeftAuto);
         autoChooser.addOption("L4 Right Auto", this::L4RightAuto);
+        autoChooser.addOption("L4 Left Auto", this::L4LeftAuto);
         //INSERT TESTED AUTOS HERE; Drivers wil use these.
         //New L4 autos
         // autoChooser.addOption("L4 Basic Left Auto", this::leftL4CoralAuto);
@@ -178,39 +178,36 @@ public class Autos {
     ///////////////////////////////////////////////////
     /// 
     /// 
-    public Command L4LeftAuto(){
+    public Command L4RightAuto(){
       return Commands.sequence(
-        new SequentialCommandGroup(
-          //the right to the vision of the apriltag is left when facing at the apriltag.
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
-          waitUntil(suctionSubsystem::getSuctionGood),
-          new ParallelCommandGroup(
-            new SequentialCommandGroup(
-              new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
-              waitUntil(swerveSubsystem::getCloseEnough),
-              new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
-              waitUntil(swerveSubsystem::getOnTarget)
-            ),
-            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4))
+        //the right to the vision of the apriltag is left when facing at the apriltag.
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
+        waitUntil(suctionSubsystem::getSuctionGood),
+        new ParallelCommandGroup(
+          new SequentialCommandGroup(
+            new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
+            waitUntil(swerveSubsystem::getCloseEnough),
+            new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
+            waitUntil(swerveSubsystem::getOnTarget)
           ),
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PLACE_L4)),
-          new WaitCommand(1.5), //technically should be elevator on target, etc.
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME))
-          )
-          );
-        }
+          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4))
+        ),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PLACE_L4)),
+        new WaitCommand(1.5), //technically should be elevator on target, etc.
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME))
+      );
+    }
         
-        public Command L4RightAuto(){
+        public Command L4LeftAuto(){
           return Commands.sequence(
-            new SequentialCommandGroup(
               //the right to the vision of the apriltag is left when facing at the apriltag.
               new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
               waitUntil(suctionSubsystem::getSuctionGood),
               new ParallelCommandGroup(
                 new SequentialCommandGroup(
-                  new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
+                  new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
                   waitUntil(swerveSubsystem::getCloseEnough),
-                  new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
+                  new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
                   waitUntil(swerveSubsystem::getOnTarget)
                   ),
                   new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4))
@@ -218,7 +215,6 @@ public class Autos {
                   new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PLACE_L4)),
                   new WaitCommand(1.5), //technically should be elevator on target, etc.
                   new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME))
-        )
       );
     }
 

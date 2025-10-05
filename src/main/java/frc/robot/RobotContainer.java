@@ -94,6 +94,14 @@ public class RobotContainer {
     return new WaitCommand(0.05).andThen(new RunCommand(()->{}).until(combined));
   }
 
+  public void initTeleopDriving(){
+    swerveSubsystem.setWantedState(
+      SwerveSubsystem.WantedState.TELEOP_DRIVE, 
+      ()->-driver.getLeftY(),
+      ()->-driver.getLeftX(),
+      ()->-driver.getRightX()
+    );
+  }
   /**
    * Use this method to define your trigger->command mappings. Triggers can be created via the
    * {@link Trigger#Trigger(java.util.function.BooleanSupplier)} constructor with an arbitrary
@@ -104,12 +112,7 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    swerveSubsystem.setWantedState(
-      SwerveSubsystem.WantedState.TELEOP_DRIVE, 
-      ()->-driver.getLeftY(),
-      ()->-driver.getLeftX(),
-      ()->-driver.getRightX()
-    );
+    initTeleopDriving();
 
     // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
     driver.povRight().onTrue(new InstantCommand(()->coralMode=!coralMode));
@@ -348,10 +351,6 @@ public class RobotContainer {
    *
    * @return the command to run in autonomous
    */
-  public Command getAutonomousCommand() {
-    // An example command will be run in autonomous
-    return new InstantCommand();
-  }
 
   public boolean getCoralMode(){
     return coralMode;
