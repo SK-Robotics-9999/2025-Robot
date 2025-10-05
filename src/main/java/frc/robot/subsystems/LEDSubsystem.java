@@ -7,8 +7,10 @@ package frc.robot.subsystems;
 import java.util.function.BooleanSupplier;
 
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class LEDSubsystem extends SubsystemBase {
   Spark leds = new Spark(9);
@@ -66,5 +68,20 @@ public class LEDSubsystem extends SubsystemBase {
 
   public void setPattern(BlinkinPattern pattern){
     leds.set(pattern.value);
+  }
+
+  public void setPattern(BlinkinPattern pattern, double seconds){
+    Commands.startRun(()->setPattern(pattern), ()->{}, this).withTimeout(seconds).schedule();
+  }
+
+  public void blink(BlinkinPattern pattern, double seconds){
+    final double interval = 0.3; //seconds
+
+    Commands.repeatingSequence(
+      Commands.runOnce(()-> setPattern(pattern), this),
+      new WaitCommand(interval),
+      Commands.runOnce(()-> setPattern(BlinkinPattern.BLACK), this),
+      new WaitCommand(interval)
+    ).withTimeout(seconds).schedule();
   }
 }
