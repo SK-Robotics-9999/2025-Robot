@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -35,6 +36,7 @@ import frc.robot.subsystems.SuperStructure;
 import frc.robot.subsystems.SuperStructure.WantedSuperState;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
+import frc.robot.subsystems.LEDSubsystem.BlinkinPattern;
 import frc.robot.Autos;
 
 /** 
@@ -69,7 +71,7 @@ public class RobotContainer {
   VisionSubsystem visionSubsystem = new VisionSubsystem(swerveSubsystem, superStructure);
   // QuestNavSubsystem questNavSubsystem = new QuestNavSubsystem();
 
-  public final Autos autos = new Autos(swerveSubsystem, superStructure, elevatorSubsystem, armSubsystem, suctionSubsystem, intakeSubsystem);
+  public final Autos autos = new Autos(swerveSubsystem, superStructure, elevatorSubsystem, armSubsystem, suctionSubsystem, intakeSubsystem, visionSubsystem);
   
   CommandXboxController driver = new CommandXboxController(0);
 
@@ -119,7 +121,14 @@ public class RobotContainer {
 
     //Rumble when breakbeam activated
     new Trigger(intakeSubsystem::hasCoral)
-    .onTrue(new StartEndCommand(()->driver.setRumble(RumbleType.kBothRumble, 0.3), ()->driver.setRumble(RumbleType.kBothRumble, 0.0)).withTimeout(0.5));
+    .onTrue(new StartEndCommand(()->driver.setRumble(RumbleType.kBothRumble, 0.3), ()->driver.setRumble(RumbleType.kBothRumble, 0.0)).withTimeout(0.5))
+    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.GREEN, 2.0)))
+    ;
+    
+    new Trigger(()->!coralMode && suctionSubsystem.getPressure()>35.0)
+    .onTrue(new StartEndCommand(()->driver.setRumble(RumbleType.kBothRumble, 0.3), ()->driver.setRumble(RumbleType.kBothRumble, 0.0)).withTimeout(0.5))
+    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE, 2.0)))
+    ;
 
     //intake
     driver.leftTrigger()
@@ -189,7 +198,7 @@ public class RobotContainer {
     )
     .onTrue(new ConditionalCommand(
       new SequentialCommandGroup(
-        waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())),
+        waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())).withTimeout(2),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
         waitUntil(intakeSubsystem::hasCoral,()->!driver.rightTrigger().getAsBoolean(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_INTAKE),superStructure)
@@ -241,7 +250,36 @@ public class RobotContainer {
       .andThen(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L2),superStructure)
       ),
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L2), superStructure),
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L2), superStructure),
+        waitUntil(()->suctionSubsystem.getPressure()>35.0),
+        new ParallelCommandGroup(
+          new RunCommand(()->swerveSubsystem.setWantedState(
+            SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
+            ()->{
+              Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
+              double xAssist = 0.2*Math.sin(poseRotation.getRadians());
+              xAssist *= isRed.getAsBoolean() ? -1 : 1;
+
+              return xAssist;
+            },
+            ()->{
+              Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
+              double yAssist = 0.2*Math.cos(poseRotation.getRadians());
+              yAssist *= isRed.getAsBoolean() ? -1 : 1;
+
+              return yAssist;
+            },
+            ()->-driver.getLeftY(),
+            ()->-driver.getLeftX(),
+            ()->-driver.getRightX(),
+            false
+          ), swerveSubsystem)
+          .until(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
+          .withTimeout(1.5),
+          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L2))
+        )
+      ),
       ()->coralMode
     )); 
 
@@ -260,7 +298,36 @@ public class RobotContainer {
       .andThen(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L3),superStructure)
       ),
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3),superStructure),
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3),superStructure),
+        waitUntil(()->suctionSubsystem.getPressure()>35.0),
+        new ParallelCommandGroup(
+          new RunCommand(()->swerveSubsystem.setWantedState(
+            SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
+            ()->{
+              Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
+              double xAssist = 0.2*Math.sin(poseRotation.getRadians());
+              xAssist *= isRed.getAsBoolean() ? -1 : 1;
+
+              return xAssist;
+            },
+            ()->{
+              Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
+              double yAssist = 0.2*Math.cos(poseRotation.getRadians());
+              yAssist *= isRed.getAsBoolean() ? -1 : 1;
+
+              return yAssist;
+            },
+            ()->-driver.getLeftY(),
+            ()->-driver.getLeftX(),
+            ()->-driver.getRightX(),
+            false
+          ), swerveSubsystem)
+          .until(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
+          .withTimeout(1.5),
+          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L2))
+        )
+      ),
       ()->coralMode
     ));
     //Move To l4
@@ -280,23 +347,29 @@ public class RobotContainer {
       )
     );
 
-    driver.rightTrigger().onTrue(new InstantCommand(()->{
-      switch(superStructure.getCurrentSuperState()){
-        case MOVE_TO_L1:
-          superStructure.SetWantedState(WantedSuperState.PLACE_L1);
-          break;
-        case MOVE_TO_L2:
-          superStructure.SetWantedState(WantedSuperState.PLACE_L2);
-          break;
-        case MOVE_TO_L3:
-          superStructure.SetWantedState(WantedSuperState.PLACE_L3);
-          break;
-        case MOVE_TO_L4:
-          superStructure.SetWantedState(WantedSuperState.PLACE_L4);
-          break;
-      }
-    },superStructure)
-    .alongWith(new InstantCommand(()->hasCoral=false))
+    driver.rightTrigger().onTrue(new ConditionalCommand(
+      new InstantCommand(()->{
+        switch(superStructure.getCurrentSuperState()){
+          case MOVE_TO_L1:
+            superStructure.SetWantedState(WantedSuperState.PLACE_L1);
+            break;
+          case MOVE_TO_L2:
+            superStructure.SetWantedState(WantedSuperState.PLACE_L2);
+            break;
+          case MOVE_TO_L3:
+            superStructure.SetWantedState(WantedSuperState.PLACE_L3);
+            break;
+          case MOVE_TO_L4:
+            superStructure.SetWantedState(WantedSuperState.PLACE_L4);
+            break;
+        }
+      },superStructure)
+      .alongWith(new InstantCommand(()->hasCoral=false)),
+      new InstantCommand(()->{
+        superStructure.SetWantedState(WantedSuperState.RELEASE_ALGAE_INTAKE);
+      }, superStructure),
+      ()->coralMode
+      )
     );
 
     driver.leftBumper().whileTrue(new SequentialCommandGroup(

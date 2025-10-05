@@ -44,6 +44,7 @@ public class SuperStructure extends SubsystemBase {
     ALGAE_INTAKE_L2,
     PULLOUT_ALGAE_INTAKE_L3,
     PULLOUT_ALGAE_INTAKE_L2,
+    RELEASE_ALGAE_INTAKE,
     EJECT,
     START_AUTO
   }
@@ -70,6 +71,7 @@ public class SuperStructure extends SubsystemBase {
     ALGAE_INTAKE_L2,
     PULLOUT_ALGAE_INTAKE_L3,
     PULLOUT_ALGAE_INTAKE_L2,
+    RELEASE_ALGAE_INTAKE,
     EJECT,
     START_AUTO
   }
@@ -181,6 +183,8 @@ public class SuperStructure extends SubsystemBase {
           return CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3;
         }
         return CurrentSuperState.IDLE;
+        case RELEASE_ALGAE_INTAKE:
+          return CurrentSuperState.RELEASE_ALGAE_INTAKE;
         
     }
     return CurrentSuperState.IDLE;
@@ -250,10 +254,13 @@ public class SuperStructure extends SubsystemBase {
         placeAtBarge();
         break;
       case PULLOUT_ALGAE_INTAKE_L2:
-        pulllutAlgaeIntakeL2();
+        pulloutAlgaeIntakeL2();
         break;
       case PULLOUT_ALGAE_INTAKE_L3:
         pulloutAlgaeIntakeL3();
+        break;
+      case RELEASE_ALGAE_INTAKE:
+        releaseAlgaeIntake();
         break;
       case EJECT:
         eject();
@@ -422,11 +429,18 @@ public class SuperStructure extends SubsystemBase {
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
   }
   
-  private void pulllutAlgaeIntakeL2(){
+  private void pulloutAlgaeIntakeL2(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.pulloutAlgael2);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.pulloutAlgaeReefIntake);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
+  }
+  
+  private void releaseAlgaeIntake(){
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.IDLE);
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.IDLE);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
   }
 
   private void startAuto(){

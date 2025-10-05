@@ -23,7 +23,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /** Add your docs here. */
 public class FieldNavigation {
-    static double botCenterToRearX = Inches.of((28/2.0)+10.0).in(Meters);
+    static double botCenterToRearX = Inches.of((28/2.0)+9.0).in(Meters);
     static double pidApproachOffset = Inches.of(((28/2.0)+5)+12).in(Meters);
     static double coralY = Inches.of(13/2.0).in(Meters);
     //These are right relative from the tag's pose facing out  from the reef
@@ -31,11 +31,12 @@ public class FieldNavigation {
     static Transform2d coralRight = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, Inches.of(-6.5).in(Meters), new Rotation2d(Degrees.of(0))));
     static Transform2d coralMid = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX-Inches.of(4.5).in(Meters), 0.0, new Rotation2d(Degrees.of(0))));
     static Transform2d reefAlgae = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, 0, new Rotation2d(Degrees.of(0))));
-    static Transform2d coralSource = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, 0, new Rotation2d(Degrees.of(180))));
+    static Transform2d coralSource = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX+Inches.of(30).in(Meters), 0, new Rotation2d(Degrees.of(180))));
     static Transform2d coralApproachOffsetLeft = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, Inches.of(6.5).in(Meters), new Rotation2d(Degrees.of(0))));
     static Transform2d coralApproachOffsetRight = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, Inches.of(-6.5).in(Meters), new Rotation2d(Degrees.of(0))));
     static Transform2d coralApproachOffsetMid = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, 0.0, new Rotation2d(Degrees.of(0))));
 
+    static boolean gotTooClose=false;
 
 
     public static List<Pose2d> tagsReef = new ArrayList<>(){{
@@ -159,18 +160,32 @@ public class FieldNavigation {
         }
     }
 
+    //Too close to reef
     public static boolean getTooCloseToTag(Pose2d currentPose){
         Pose2d nearest = getNearestReef(currentPose);
 
         Transform2d distance = currentPose.minus(nearest);
 
         boolean tooCloseX = distance.getMeasureX().in(Inches)<(16.0+17.0);//17 is for bumper edge to robot center
-        SmartDashboard.putBoolean("swerve/tooCloseX", tooCloseX);
+        // SmartDashboard.putBoolean("swerve/tooCloseX", tooCloseX);
         
         boolean tooCloseY = Math.abs(distance.getMeasureY().in(Inches))<25.0;
-        SmartDashboard.putBoolean("swerve/tooCloseY", tooCloseY);
+        // SmartDashboard.putBoolean("swerve/tooCloseY", tooCloseY);
 
 
+
+        return tooCloseX && tooCloseY;
+    }
+    public static boolean getTooCloseToSource(Pose2d currentPose){
+        Pose2d nearest = getNearestSource(currentPose);
+
+        Transform2d distance = currentPose.minus(nearest);
+
+        boolean tooCloseX = distance.getMeasureX().in(Inches)<(15.0+17.0);//17 is for bumper edge to robot center
+        
+        boolean tooCloseY = Math.abs(distance.getMeasureY().in(Inches))<40.0;
+
+        gotTooClose = tooCloseX && tooCloseY;
 
         return tooCloseX && tooCloseY;
     }

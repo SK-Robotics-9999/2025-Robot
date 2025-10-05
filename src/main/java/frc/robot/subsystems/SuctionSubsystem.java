@@ -26,8 +26,8 @@ import com.revrobotics.spark.SparkMax;
 
         SparkFlex suctionMotor = new SparkFlex(MotorConstants.kSuctionID, MotorType.kBrushless);
 
-        private final double targetPressureCoral = 30.0;
-        private final double targetPressureAlgae = 40.0;
+        private final double targetPressureCoral = 40.0;
+        private final double targetPressureAlgae = 50.0;
 
         PIDController pid = new PIDController(12.0/10.0, 0, 0);
 
@@ -60,7 +60,6 @@ import com.revrobotics.spark.SparkMax;
         public void periodic(){
             SmartDashboard.putNumber("/suction/pressure", getPressure());
             SmartDashboard.putBoolean("/suction/solenoidReleased", getSolenoidReleased());
-            SmartDashboard.putNumber("/suction/current", suctionMotor.getOutputCurrent());
 
             systemState = handleStateTransitions();
             ApplyStates();
@@ -125,9 +124,7 @@ import com.revrobotics.spark.SparkMax;
         public double getPressure(){
 
             double voltageRatio = vacuumSensor.getVoltage()/5.0; //technically supply voltage, idt it matter significantly but we will see
-            SmartDashboard.putNumber("/suction/voltageRatio", voltageRatio);
             double pressure = -(voltageRatio-0.92)/0.007652; //technically negative pressure, but positive is more understandable
-            SmartDashboard.putNumber("/suction/pressureInMethod", pressure);
         
             return pressure;
         }
@@ -160,7 +157,7 @@ import com.revrobotics.spark.SparkMax;
 
         //for coral
         public boolean getSuctionGood(){
-            return getPressure()>25.0;
+            return getPressure()>35.0;
         }
 
         public void SetWantedState(WantedState wantedState){

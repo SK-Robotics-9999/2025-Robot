@@ -34,6 +34,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -89,6 +90,9 @@ public class VisionSubsystem extends SubsystemBase {
     ),
     new Rotation3d(0.0, Math.toRadians(25.77), Math.toRadians(14.08))
   );
+
+  Pose2d lastSeenObjectPose = new Pose2d();
+  double lastSeenTimestamp = -1.0;
 
   Field2d visionField = new Field2d();
 
@@ -245,4 +249,26 @@ public class VisionSubsystem extends SubsystemBase {
     return Optional.of(robotRelative);
   }
 
+  public Optional<Pose2d> getObjectFieldRelativePose(Pose2d robotPose){
+    Optional<Translation2d> translation = getObjectTranslationRelative();
+    if(translation.isEmpty()){return Optional.empty();}
+    // final double middleToIntake = Inches.of(16.0).in(Meters);
+    final double middleToIntake = Inches.of(6).in(Meters);
+    Translation2d ojbectIntakeRelative = translation.get().minus(new Translation2d(middleToIntake, 0.0));
+    
+    //technically off by 16 inches, but whatever.  
+    Pose2d fieldRelativeNotePose = robotPose.plus(new Transform2d(ojbectIntakeRelative, ojbectIntakeRelative.getAngle()));
+    lastSeenObjectPose = fieldRelativeNotePose;
+    lastSeenTimestamp = Timer.getFPGATimestamp();
+    // visionField.getObject("coral").setPose(fieldRelativeNotePose); // whatevvvaaa
+    return Optional.of(fieldRelativeNotePose);
+  }
+
+  public Pose2d getLastSeenObjectPose(){
+    return lastSeenObjectPose;
+  }
+
+  public double getLastSeenTimestamp(){
+    return lastSeenTimestamp;
+  }
 }
