@@ -39,7 +39,6 @@ public class SuperStructure extends SubsystemBase {
     PLACE_L3,
     PLACE_L2,
     PLACE_L1,
-    PLACE_BARGE,
     ALGAE_INTAKE_L3,
     ALGAE_INTAKE_L2,
     PULLOUT_ALGAE_INTAKE_L3,
@@ -66,7 +65,6 @@ public class SuperStructure extends SubsystemBase {
     PLACE_L3,
     PLACE_L2,
     PLACE_L1,
-    PLACE_BARGE,
     ALGAE_INTAKE_L3,
     ALGAE_INTAKE_L2,
     PULLOUT_ALGAE_INTAKE_L3,
@@ -168,11 +166,6 @@ public class SuperStructure extends SubsystemBase {
           return CurrentSuperState.PLACE_L1;
         }
         return CurrentSuperState.IDLE;
-      case PLACE_BARGE:
-        if(previousSuperState==CurrentSuperState.MOVE_TO_BARGE){
-          return CurrentSuperState.PLACE_BARGE;
-        }
-        return CurrentSuperState.IDLE;
       case PULLOUT_ALGAE_INTAKE_L2:
         if(previousSuperState==CurrentSuperState.ALGAE_INTAKE_L2){
           return CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2;
@@ -249,9 +242,6 @@ public class SuperStructure extends SubsystemBase {
         break;
       case PLACE_L1:
         placeAtL1();
-        break;
-      case PLACE_BARGE:
-        placeAtBarge();
         break;
       case PULLOUT_ALGAE_INTAKE_L2:
         pulloutAlgaeIntakeL2();
@@ -395,13 +385,6 @@ public class SuperStructure extends SubsystemBase {
   private void placeAtL1(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.scoreL1);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.scoreL1);
-    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
-    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
-  }
-
-  private void placeAtBarge(){
-    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.barge);
-    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.barge);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
   }

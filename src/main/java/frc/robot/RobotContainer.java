@@ -250,36 +250,7 @@ public class RobotContainer {
       .andThen(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L2),superStructure)
       ),
-      new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L2), superStructure),
-        waitUntil(()->suctionSubsystem.getPressure()>35.0),
-        new ParallelCommandGroup(
-          new RunCommand(()->swerveSubsystem.setWantedState(
-            SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
-            ()->{
-              Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
-              double xAssist = 0.2*Math.sin(poseRotation.getRadians());
-              xAssist *= isRed.getAsBoolean() ? -1 : 1;
-
-              return xAssist;
-            },
-            ()->{
-              Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
-              double yAssist = 0.2*Math.cos(poseRotation.getRadians());
-              yAssist *= isRed.getAsBoolean() ? -1 : 1;
-
-              return yAssist;
-            },
-            ()->-driver.getLeftY(),
-            ()->-driver.getLeftX(),
-            ()->-driver.getRightX(),
-            false
-          ), swerveSubsystem)
-          .until(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
-          .withTimeout(1.5),
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L2))
-        )
-      ),
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L2), superStructure),
       ()->coralMode
     )); 
 
@@ -298,40 +269,12 @@ public class RobotContainer {
       .andThen(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L3),superStructure)
       ),
-      new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3),superStructure),
-        waitUntil(()->suctionSubsystem.getPressure()>35.0),
-        new ParallelCommandGroup(
-          new RunCommand(()->swerveSubsystem.setWantedState(
-            SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
-            ()->{
-              Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
-              double xAssist = 0.2*Math.sin(poseRotation.getRadians());
-              xAssist *= isRed.getAsBoolean() ? -1 : 1;
-
-              return xAssist;
-            },
-            ()->{
-              Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
-              double yAssist = 0.2*Math.cos(poseRotation.getRadians());
-              yAssist *= isRed.getAsBoolean() ? -1 : 1;
-
-              return yAssist;
-            },
-            ()->-driver.getLeftY(),
-            ()->-driver.getLeftX(),
-            ()->-driver.getRightX(),
-            false
-          ), swerveSubsystem)
-          .until(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
-          .withTimeout(1.5),
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L2))
-        )
-      ),
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3),superStructure),
       ()->coralMode
     ));
-    //Move To l4
-    driver.y().onTrue(
+
+    //Move to L4
+    driver.y().onTrue(new ConditionalCommand(
       new SequentialCommandGroup(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
@@ -344,8 +287,10 @@ public class RobotContainer {
       .until(()->hasCoral)
       .andThen(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4),superStructure)
-      )
-    );
+      ),
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_BARGE),superStructure),
+      ()->coralMode
+    ));
 
     driver.rightTrigger().onTrue(new ConditionalCommand(
       new InstantCommand(()->{
@@ -404,7 +349,13 @@ public class RobotContainer {
       .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
     );
 
-    driver.povUp().onTrue(new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure));
+    driver.povUp().onTrue(
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure),
+        new WaitCommand(2),
+        new InstantCommand(()->intakeSubsystem.zeroIntake())
+      )
+      );
 
     driver.povDown().onTrue(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.EJECT))

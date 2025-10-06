@@ -40,7 +40,7 @@ public class IntakeSubsystem extends SubsystemBase {
   private boolean intaking = false;
 
   public double pidTargetIntake = 157.0; // close to absConversionFactor
-  public double pidTargetSafe = 142.0; //out of reach from pickup
+  public double pidTargetSafe = pidTargetIntake-15.0; //out of reach from pickup
 
   public enum WantedState{
     HOME,
@@ -248,7 +248,8 @@ public class IntakeSubsystem extends SubsystemBase {
   public void intakeStuff(){
     if(pivotMotor.getAbsoluteEncoder().getPosition()>130.0){
       pivotMotor.setVoltage(-0.5);
-      stopRollers();
+      // stopRollers();
+      rollStuff();
       stopPassthrough();
     }
     else{
@@ -288,6 +289,12 @@ public class IntakeSubsystem extends SubsystemBase {
 
   public boolean hasCoral(){
     return !beambreak.get();
+  }
+
+  public void zeroIntake(){
+    pidTargetIntake = pivotMotor.getAbsoluteEncoder().getPosition()-5.0; //cant use getAngle method, i messed it up
+    pidTargetSafe = pidTargetIntake-15.0; //cant use getAngle method, i messed it up
+
   }
 
 

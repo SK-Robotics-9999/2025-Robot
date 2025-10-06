@@ -65,7 +65,7 @@ public final class Constants {
     public static final double scoreL2 = 25;
     public static final double scoreL3 = 25;
     public static final double scoreL4 = 15;
-    public static final double barge = 90;
+    public static final double barge = 70;
     public static final double algaeReefIntake = 0;
     public static final double pulloutAlgaeReefIntake = 10;
     public static final double algaeGroundIntake = -30;
@@ -80,7 +80,7 @@ public final class Constants {
     public static final double moveL3 = 30.0;
     public static final double moveL2 = 14.0;
     public static final double moveL1 = 13.0;
-    public static final double barge = 50.0;
+    public static final double barge = 53.0;
     public static final double scoreL4 = 42.0;
     public static final double scoreL3 = 21.0;
     public static final double scoreL2 = 5.0;
