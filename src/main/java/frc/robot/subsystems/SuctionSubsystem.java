@@ -156,9 +156,15 @@ import com.revrobotics.spark.SparkMax;
         }
 
         //for coral
-        public boolean getSuctionGood(){
+        public boolean getCoralSuctionGood(){
             return getPressure()>35.0;
         }
+
+        public boolean getAlgaeSuctionGood(){
+            return getPressure()>35.0; //should probably be higher
+        }
+
+
 
         public void SetWantedState(WantedState wantedState){
             this.wantedState = wantedState;

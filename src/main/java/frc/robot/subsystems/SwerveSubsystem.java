@@ -4,16 +4,17 @@
 
 package frc.robot.subsystems;
 
-import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Inches;
 import static edu.wpi.first.units.Units.Meters;
 
 import java.io.File;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
 import com.studica.frc.AHRS;
 
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -26,7 +27,10 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.FieldNavigation;
 import swervelib.SwerveDrive;
 import swervelib.parser.SwerveParser;
@@ -349,12 +353,12 @@ public class SwerveSubsystem extends SubsystemBase {
     ChassisSpeeds speeds = swerveDrive.getRobotVelocity();
     return Math.hypot(speeds.vxMetersPerSecond, speeds.vyMetersPerSecond);
   }
-
+  
   public double getAngularVelocity(){
     ChassisSpeeds speeds = swerveDrive.getRobotVelocity();
     return speeds.omegaRadiansPerSecond;
   }
-
+  
   public boolean getOnTarget(){
     Transform2d delta = targetPose.minus(getPose());
     
@@ -364,9 +368,32 @@ public class SwerveSubsystem extends SubsystemBase {
     && getVelocity()<Inches.of(6.0).in(Meters);
   }
   
+  public boolean getOnTarget(Pose2d pose, double translationalTolerance, double angularTolerance, double velocityTolerance){
+    Transform2d delta = pose.minus(getPose());
+    
+    return delta.getTranslation().getNorm()<translationalTolerance
+    && delta.getRotation().getDegrees()<angularTolerance
+    && systemState==SystemState.DRIVING_TO_POINT
+    && getVelocity()< velocityTolerance;    
+  }
+  
+  // I lowkey don't know if the edge cases will destroy this.
+  public boolean getOnScoringPose(){
+    Transform2d delta = targetPose.minus(getPose());
+    
+    Transform2d tagToTarget = targetPose.minus(FieldNavigation.getNearestReef(getPose()));
+    
+    return delta.getTranslation().getNorm()<Inches.of(1.0).in(Meters) 
+    && delta.getRotation().getDegrees()<3.0
+    && systemState==SystemState.DRIVING_TO_POINT
+    && tagToTarget.getX()<FieldNavigation.botCenterToRearX+1
+    && Math.abs(tagToTarget.getMeasureY().in(Inches)) <25.0
+    && getVelocity()<Inches.of(6.0).in(Meters);
+  }
+  
   public boolean getCloseEnough(){
     Transform2d delta = targetPose.minus(getPose());
-
+    
     return delta.getTranslation().getNorm()<Inches.of(3.0).in(Meters) 
     && delta.getRotation().getDegrees()<10.0
     && swerveDrive.getFieldVelocity().omegaRadiansPerSecond<1.0
@@ -374,12 +401,12 @@ public class SwerveSubsystem extends SubsystemBase {
     && getVelocity()<0.5;
     
   }
-
+  
   public ChassisSpeeds getRobotRelativeSpeeds(){
     return swerveDrive.getRobotVelocity();
   }
-
-
+  
+  
   //I have no idea if this works
   public Pose2d getFieldRelativeIntakePose(Translation2d noteRobotRelative){
     // final double middleToIntake = Inches.of(16.0).in(Meters);
@@ -390,8 +417,72 @@ public class SwerveSubsystem extends SubsystemBase {
     Pose2d fieldRelativeNotePose = getPose().plus(new Transform2d(noteIntakeRelative, noteRobotRelative.getAngle()));
     odometryField.getObject("coral").setPose(fieldRelativeNotePose); // whatevvvaaa
     return fieldRelativeNotePose;
-
+    
+  }
+  
+  public Command pidToPoseCommand(Pose2d pose){
+    return new InstantCommand(()->SetWantedState(WantedState.DRIVE_TO_POINT, pose),  this);
   }
 
+  public Command driveAwayFromReef(CommandXboxController driver){
+    return new RunCommand(()->setWantedState(
+        SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
+        ()->{
+          Rotation2d poseRotation = FieldNavigation.getNearestReef(getPose()).getRotation();
+          double xAssist = 0.2*Math.cos(poseRotation.getRadians());
+          xAssist *= isRed.getAsBoolean() ? -1 : 1;
 
+          return xAssist;
+        },
+        ()->{
+          Rotation2d poseRotation = FieldNavigation.getNearestReef(getPose()).getRotation();
+          double yAssist = 0.2*Math.sin(poseRotation.getRadians());
+          yAssist *= isRed.getAsBoolean() ? -1 : 1;
+
+          return yAssist;
+        },
+        ()->-driver.getLeftY(),
+        ()->-driver.getLeftX(),
+        ()->-driver.getRightX(),
+        false
+      ), this)
+
+      .until(()->!FieldNavigation.getTooCloseToTag(getPose()));
+  }
+  
+  public Command intakeAssist(VisionSubsystem visionSubsystem, CommandXboxController driver){
+    return new RunCommand(()->setWantedState(
+          SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
+          ()->0,
+          ()->{
+            Optional<Translation2d> optional = visionSubsystem.getObjectTranslationRelative();
+            if(optional.isEmpty()){return 0.0;}
+            Translation2d translation = optional.get();
+            if(Math.abs(translation.getY())<Inches.of(1).in(Meters)){return 0.0;}
+            ChassisSpeeds robotRelative = getRobotRelativeSpeeds();
+            
+            double xSpeed = robotRelative.vxMetersPerSecond;
+            if(xSpeed<0.0){return 0.0;}
+
+            double yAssist = MathUtil.clamp(translation.getY(), -2.0, 2.0);
+            yAssist *= xSpeed;
+
+            if(Math.abs(yAssist)<0.05){return 0.0;}
+            
+            SmartDashboard.putNumber("vision/intaking/yAssist", yAssist);
+            return yAssist;
+          },
+          ()->-driver.getLeftY(),
+          ()->-driver.getLeftX(),
+          ()->-driver.getRightX(),
+          true
+        ), this)
+
+        .finallyDo((e)->setWantedState(
+          SwerveSubsystem.WantedState.TELEOP_DRIVE, 
+          ()->-driver.getLeftY(),
+          ()->-driver.getLeftX(),
+          ()->-driver.getRightX()
+        ));
+  }
 }
