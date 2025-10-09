@@ -226,14 +226,14 @@ public Command getIntakeSequence(Supplier<Pose2d> backupPose, Supplier<Pose2d> o
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
         waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
+        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getCoralSuctionGood),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4), superStructure),
         waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget)
       ).until(()->FieldNavigation.gotTooClose && !intakeSubsystem.hasCoral())
     )
-    .withTimeout(10.0),
+    .withTimeout(5.0),
 
     new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PLACE_L4)),
     waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget).withTimeout(1.5),
@@ -246,7 +246,7 @@ public Command L4RightAuto(){
       //the right to the vision of the apriltag is left when facing at the apriltag.
       new InstantCommand(()->System.out.println("L4RightAuto")),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
-      waitUntil(suctionSubsystem::getSuctionGood),
+      waitUntil(suctionSubsystem::getCoralSuctionGood),
       new ParallelCommandGroup(
         new SequentialCommandGroup(
           new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
@@ -267,7 +267,7 @@ public Command L4RightAuto(){
       new InstantCommand(()->System.out.println("L4LeftAuto")),
       //the right to the vision of the apriltag is left when facing at the apriltag.
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
-      waitUntil(suctionSubsystem::getSuctionGood),
+      waitUntil(suctionSubsystem::getCoralSuctionGood),
 
       new ParallelCommandGroup(
         new SequentialCommandGroup(
@@ -291,7 +291,7 @@ public Command L4RightAuto(){
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4RightAutoLong")),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
-      waitUntil(suctionSubsystem::getSuctionGood),
+      waitUntil(suctionSubsystem::getCoralSuctionGood),
 
       new ParallelCommandGroup(
         new SequentialCommandGroup(
@@ -316,7 +316,7 @@ public Command L4RightAuto(){
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4RightAutoLong")),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
-      waitUntil(suctionSubsystem::getSuctionGood),
+      waitUntil(suctionSubsystem::getCoralSuctionGood),
 
       new ParallelCommandGroup(
         new SequentialCommandGroup(

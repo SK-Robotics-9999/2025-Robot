@@ -57,6 +57,7 @@ public class RobotContainer {
   private boolean hasCoral=false;//TODO: technically true at the start of auto, will fix after
 
   private boolean coralMode=true;
+  private boolean automationEnabled=true;
 
   // The robot's subsystems and commands are defined here...
   SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
@@ -96,14 +97,6 @@ public class RobotContainer {
     return new WaitCommand(0.05).andThen(new RunCommand(()->{}).until(combined));
   }
 
-  public void initTeleopDriving(){
-    swerveSubsystem.setWantedState(
-      SwerveSubsystem.WantedState.TELEOP_DRIVE, 
-      ()->-driver.getLeftY(),
-      ()->-driver.getLeftX(),
-      ()->-driver.getRightX()
-    );
-  }
   /**
    * Use this method to define your trigger->command mappings. Triggers can be created via the
    * {@link Trigger#Trigger(java.util.function.BooleanSupplier)} constructor with an arbitrary
@@ -114,7 +107,7 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    initTeleopDriving();
+    enableTeleopDriving();
 
     // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
     driver.povRight().onTrue(new InstantCommand(()->coralMode=!coralMode));
@@ -122,78 +115,22 @@ public class RobotContainer {
     //Rumble when breakbeam activated
     new Trigger(intakeSubsystem::hasCoral)
     .onTrue(new StartEndCommand(()->driver.setRumble(RumbleType.kBothRumble, 0.3), ()->driver.setRumble(RumbleType.kBothRumble, 0.0)).withTimeout(0.5))
-    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.GREEN, 2.0)))
+    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.GREEN, 1.5)))
     ;
     
-    new Trigger(()->!coralMode && suctionSubsystem.getPressure()>35.0)
+    new Trigger(()->!coralMode && suctionSubsystem.getAlgaeSuctionGood())
     .onTrue(new StartEndCommand(()->driver.setRumble(RumbleType.kBothRumble, 0.3), ()->driver.setRumble(RumbleType.kBothRumble, 0.0)).withTimeout(0.5))
-    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE, 2.0)))
+    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE, 1.5)))
     ;
 
     //intake
     driver.leftTrigger()
     .whileTrue(
-      new RunCommand(()->swerveSubsystem.setWantedState(
-        SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
-        ()->{
-          Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
-          double xAssist = 0.2*Math.sin(poseRotation.getRadians());
-          xAssist *= isRed.getAsBoolean() ? -1 : 1;
-
-          return xAssist;
-        },
-        ()->{
-          Rotation2d poseRotation = FieldNavigation.getNearestReef(swerveSubsystem.getPose()).getRotation();
-          double yAssist = 0.2*Math.cos(poseRotation.getRadians());
-          yAssist *= isRed.getAsBoolean() ? -1 : 1;
-
-          return yAssist;
-        },
-        ()->-driver.getLeftY(),
-        ()->-driver.getLeftX(),
-        ()->-driver.getRightX(),
-        false
-      ), swerveSubsystem)
-
-      .until(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
-
-      .andThen(new RunCommand(()->swerveSubsystem.setWantedState(
-        SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
-        ()->0,
-        ()->{
-          Optional<Translation2d> optional = visionSubsystem.getObjectTranslationRelative();
-          if(optional.isEmpty()){return 0.0;}
-          Translation2d translation = optional.get();
-          if(Math.abs(translation.getY())<Inches.of(1).in(Meters)){return 0.0;}
-          ChassisSpeeds robotRelative = swerveSubsystem.getRobotRelativeSpeeds();
-          
-          double xSpeed = robotRelative.vxMetersPerSecond;
-          if(xSpeed<0.0){return 0.0;}
-          xSpeed=Math.sqrt(xSpeed);
-          Rotation2d robotToCoral = translation.getAngle();
-          double yAssist = xSpeed * robotToCoral.getTan();
-          yAssist*=5.0;
-
-          if(Math.abs(yAssist)<0.05){return 0.0;}
-          // double yAssist = MathUtil.clamp(translation.getY(), -2.0, 2.0);
-          // yAssist *= xSpeed;
-
-          // if(Math.abs(yAssist)<0.05){return 0.0;}
-          
-          SmartDashboard.putNumber("vision/intaking/yAssist", yAssist);
-          return yAssist;
-        },
-        ()->-driver.getLeftY(),
-        ()->-driver.getLeftX(),
-        ()->-driver.getRightX(),
-        true
-      ), swerveSubsystem))
-
-      .finallyDo((e)->swerveSubsystem.setWantedState(
-        SwerveSubsystem.WantedState.TELEOP_DRIVE, 
-        ()->-driver.getLeftY(),
-        ()->-driver.getLeftX(),
-        ()->-driver.getRightX()
+      swerveSubsystem.driveAwayFromReef(driver).withTimeout(5)
+      .andThen(new ConditionalCommand(
+        swerveSubsystem.intakeAssist(visionSubsystem, driver),
+        new InstantCommand(),
+        ()->coralMode
       ))
     )
     .onTrue(new ConditionalCommand(
@@ -203,95 +140,44 @@ public class RobotContainer {
         waitUntil(intakeSubsystem::hasCoral,()->!driver.rightTrigger().getAsBoolean(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_INTAKE),superStructure)
       ),
-
-      new InstantCommand(()->{
-        switch(superStructure.getCurrentSuperState()){
-          case ALGAE_INTAKE_L2:
-            superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L2);
-            break;
-          case ALGAE_INTAKE_L3:
-            superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L3);
-            break;
-        }
-      }),
-
+      pulloutAlgae(),
       ()->coralMode
     ));
 
       //Move To l1
     driver.a().onTrue(
-      new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
-        waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
-        new InstantCommand(()->hasCoral=true)
-      )
+      pickupCoralSequence()
       .until(()->hasCoral)
-      .andThen(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L1),superStructure)
-      )
+      .andThen(moveAndPlace(WantedSuperState.MOVE_TO_L1, WantedSuperState.PLACE_L1))
     );
       
     //Move To l2
     driver.b().onTrue(new ConditionalCommand(
-      new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
-        waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
-        new InstantCommand(()->hasCoral=true)
-      )
+      pickupCoralSequence()
       .until(()->hasCoral)
-      .andThen(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L2),superStructure)
-      ),
+      .andThen(moveAndPlace(WantedSuperState.MOVE_TO_L2, WantedSuperState.PLACE_L2)),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L2), superStructure),
       ()->coralMode
     )); 
 
     //Move To l3
     driver.x().onTrue(new ConditionalCommand(
-      new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
-        waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
-        new InstantCommand(()->hasCoral=true)
-      )
+      pickupCoralSequence()
       .until(()->hasCoral)
-      .andThen(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L3),superStructure)
-      ),
+      .andThen(moveAndPlace(WantedSuperState.MOVE_TO_L3, WantedSuperState.PLACE_L3)),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3),superStructure),
       ()->coralMode
-    ));
-
+      ));
+      
     //Move to L4
     driver.y().onTrue(new ConditionalCommand(
-      new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
-        waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getSuctionGood),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
-        new InstantCommand(()->hasCoral=true)
-      )
+      pickupCoralSequence()
       .until(()->hasCoral)
-      .andThen(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4),superStructure)
-      ),
+      .andThen(moveAndPlace(WantedSuperState.MOVE_TO_L4, WantedSuperState.PLACE_L4)),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_BARGE),superStructure),
       ()->coralMode
     ));
-
+          
     driver.rightTrigger().onTrue(new ConditionalCommand(
       new InstantCommand(()->{
         switch(superStructure.getCurrentSuperState()){
@@ -314,18 +200,16 @@ public class RobotContainer {
         superStructure.SetWantedState(WantedSuperState.RELEASE_ALGAE_INTAKE);
       }, superStructure),
       ()->coralMode
-      )
-    );
+    ));
 
     driver.leftBumper().whileTrue(new SequentialCommandGroup(
-        //the right to the vision of the apriltag is left when facing at the apriltag.
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
         waitUntil(swerveSubsystem::getCloseEnough),
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
         waitUntil(()->false)
       )
       .until(()->!superStructure.getIsAtReefState() && FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
-      .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
+      .finallyDo((e)->enableTeleopDriving())
     );
     
     driver.rightBumper().whileTrue(new SequentialCommandGroup(
@@ -336,17 +220,28 @@ public class RobotContainer {
         waitUntil(()->false)
       )
       .until(()->!superStructure.getIsAtReefState() && FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
-      .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
+      .finallyDo((e)->enableTeleopDriving())
     );
 
     driver.back().whileTrue(new SequentialCommandGroup(
-        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralMid(swerveSubsystem.getPose()))),
-        waitUntil(swerveSubsystem::getOnTarget),
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralMid(swerveSubsystem.getPose())), swerveSubsystem),
+        waitUntil(swerveSubsystem::getCloseEnough),
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralMid(swerveSubsystem.getPose())), swerveSubsystem),
-        waitUntil(()->false)
+        new ConditionalCommand(
+          new SequentialCommandGroup(
+            waitUntil(swerveSubsystem::getOnTarget, suctionSubsystem::getAlgaeSuctionGood),
+            pulloutAlgae(),
+            swerveSubsystem.driveAwayFromReef(driver),
+            waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())),
+            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE), superStructure),
+            new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5))
+          ),
+          new RunCommand(()->{}),
+          ()->automationEnabled && !coralMode
+        )
       )
       .until(()->!superStructure.getIsAtReefState() && FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
-      .finallyDo((e)->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.TELEOP_DRIVE))
+      .finallyDo((e)->enableTeleopDriving())
     );
 
     driver.povUp().onTrue(
@@ -360,23 +255,68 @@ public class RobotContainer {
     driver.povDown().onTrue(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.EJECT))
     );
-    // driver.povLeft().whileTrue(
-    //   new RunCommand(()->{
-    //     Optional<Translation2d> coral = visionSubsystem.getObjectTranslationRelative();
-    //     if (coral.isEmpty()){return;}
-    //     //should graph on glass or advantage scope or something
-    //     swerveSubsystem.getFieldRelativeIntakePose(coral.get());
-    //   })
-    // );
+
+    driver.povLeft().onTrue(
+      new InstantCommand(()->automationEnabled=!automationEnabled)
+    );
   }
 
-  /**
-   * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
-   * @return the command to run in autonomous
-   */
+  private Command pickupCoralSequence(){
+    return new SequentialCommandGroup(
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
+      waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
+      waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getCoralSuctionGood),
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
+      waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
+      new InstantCommand(()->hasCoral=true)
+    );
+  }
+
+  private Command pulloutAlgae(){
+    return new InstantCommand(()->{
+      switch(superStructure.getCurrentSuperState()){
+        case ALGAE_INTAKE_L2:
+          superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L2);
+          break;
+        case ALGAE_INTAKE_L3:
+          superStructure.SetWantedState(WantedSuperState.PULLOUT_ALGAE_INTAKE_L3);
+          break;
+      }
+    }, superStructure);
+  }
+
+  private Command moveAndPlace(WantedSuperState moveTo, WantedSuperState placeAt){
+    return new SequentialCommandGroup(
+      new InstantCommand(()->superStructure.SetWantedState(moveTo),superStructure),
+      new ConditionalCommand(
+        new SequentialCommandGroup(
+          waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget, swerveSubsystem::getOnScoringPose),
+          new InstantCommand(()->superStructure.SetWantedState(placeAt),superStructure),
+          waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget).withTimeout(0.5),
+          new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.RED_ORANGE, 2)),
+          new InstantCommand(()->hasCoral=false)
+        ),
+        new InstantCommand(),
+        ()->automationEnabled
+      )
+    );
+  }
+
+  public void enableTeleopDriving(){
+    swerveSubsystem.setWantedState(
+      SwerveSubsystem.WantedState.TELEOP_DRIVE, 
+      ()->-driver.getLeftY(),
+      ()->-driver.getLeftX(),
+      ()->-driver.getRightX()
+    );
+  }
 
   public boolean getCoralMode(){
     return coralMode;
+  }
+
+  public boolean getAutomationEnabled(){
+    return automationEnabled;
   }
 }

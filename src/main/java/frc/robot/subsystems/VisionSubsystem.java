@@ -100,7 +100,7 @@ public class VisionSubsystem extends SubsystemBase {
   public VisionSubsystem(SwerveSubsystem swerve, SuperStructure superStructure) {
     this.swerve = swerve;
     this.superStructure = superStructure;
-    SmartDashboard.putData("visionfield", visionField);
+    // SmartDashboard.putData("visionfield", visionField);
       
     try{
       leftCamera = Optional.of(new PhotonCamera("left_cam"));
@@ -199,7 +199,6 @@ public class VisionSubsystem extends SubsystemBase {
         );
         
         Transform2d transform = position.minus(estimatedPose.get().estimatedPose.toPose2d());
-        SmartDashboard.putNumber("/vision/x", transform.getX());
 
         visionField.getObject("robotToTag").setPose(new Pose2d(transform.getTranslation(), transform.getRotation()));
       }

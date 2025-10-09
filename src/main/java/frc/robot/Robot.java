@@ -45,6 +45,7 @@ public class Robot extends TimedRobot {
     CommandScheduler.getInstance().run();
 
     SmartDashboard.putBoolean("coralMode", m_robotContainer.getCoralMode());
+    SmartDashboard.putBoolean("automationEnabled", m_robotContainer.getAutomationEnabled());
   }
 
   /** This function is called once each time the robot enters Disabled mode. */
@@ -77,7 +78,7 @@ public class Robot extends TimedRobot {
     // teleop starts running. If you want the autonomous to
     // continue until interrupted by another command, remove
     // this line or comment it out.
-    m_robotContainer.initTeleopDriving();
+    m_robotContainer.enableTeleopDriving();
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }

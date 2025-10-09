@@ -75,7 +75,7 @@ public class LEDSubsystem extends SubsystemBase {
   }
 
   public void blink(BlinkinPattern pattern, double seconds){
-    final double interval = 0.2; //seconds
+    final double interval = 0.13; //seconds
 
     Commands.repeatingSequence(
       Commands.runOnce(()-> setPattern(pattern), this),

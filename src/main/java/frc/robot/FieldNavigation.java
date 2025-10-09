@@ -16,6 +16,7 @@ import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -23,13 +24,13 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /** Add your docs here. */
 public class FieldNavigation {
-    static double botCenterToRearX = Inches.of((28/2.0)+9.0).in(Meters);
+    public static double botCenterToRearX = Inches.of((28/2.0)+9.0).in(Meters);
     static double pidApproachOffset = Inches.of(((28/2.0)+5)+12).in(Meters);
     static double coralY = Inches.of(13/2.0).in(Meters);
     //These are right relative from the tag's pose facing out  from the reef
     static Transform2d coralLeft = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, Inches.of(6.5).in(Meters), new Rotation2d(Degrees.of(0))));
     static Transform2d coralRight = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, Inches.of(-6.5).in(Meters), new Rotation2d(Degrees.of(0))));
-    static Transform2d coralMid = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX-Inches.of(4.5).in(Meters), 0.0, new Rotation2d(Degrees.of(0))));
+    static Transform2d coralMid = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX-Inches.of(5.5).in(Meters), 0.0, new Rotation2d(Degrees.of(0))));
     static Transform2d reefAlgae = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX, 0, new Rotation2d(Degrees.of(0))));
     static Transform2d coralSource = new Transform2d(new Pose2d(), new Pose2d(botCenterToRearX+Inches.of(30).in(Meters), 0, new Rotation2d(Degrees.of(180))));
     static Transform2d coralApproachOffsetLeft = new Transform2d(new Pose2d(), new Pose2d(pidApproachOffset, Inches.of(6.5).in(Meters), new Rotation2d(Degrees.of(0))));
@@ -66,6 +67,17 @@ public class FieldNavigation {
         add(AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(3).get().toPose2d());
         add(AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(16).get().toPose2d());
     }};
+
+    //although should be translations, need pose to use pose.nearest() method
+    public static List<Pose2d> reefCenter = new ArrayList<>(){{
+        add(new Pose2d(4.49, 4.026, new Rotation2d()));
+        add(new Pose2d(13.06, 4.026, new Rotation2d()));
+    }};
+
+    //hexagon inscribed in circle, meters
+    public static final double reefRadius = 0.96;
+    //Ruined the original one, furthermore we want to radius of the bot, not just the x. even though is rectangle, close enough.
+    public static final double botRadius = Inches.of(17).in(Meters) * 1.414;
 
     public Field2d field = new Field2d();
 
@@ -188,6 +200,49 @@ public class FieldNavigation {
         gotTooClose = tooCloseX && tooCloseY;
 
         return tooCloseX && tooCloseY;
+    }
+
+    //circle radius (simplification) with center at reef-center
+    public static boolean getCrashIntoReef(Pose2d currentPose){
+        Pose2d closestReefCenter = currentPose.nearest(reefCenter);
+        Translation2d delta = currentPose.getTranslation().minus(closestReefCenter.getTranslation());
+
+        return delta.getNorm() < botRadius+reefRadius;
+    }
+
+    //chatgpt goat
+    public static boolean segmentIntersectsReef(Pose2d start, Pose2d end) {
+        Translation2d p1 = start.getTranslation();
+        Translation2d p2 = end.getTranslation();
+        Translation2d center = start.nearest(reefCenter).getTranslation();
+    
+        Translation2d d = p2.minus(p1);
+        Translation2d f = p1.minus(center);
+    
+        double dx = d.getX();
+        double dy = d.getY();
+        double fx = f.getX();
+        double fy = f.getY();
+    
+        double r = botRadius + reefRadius;
+    
+        // Compute quadratic coefficients
+        double a = dx * dx + dy * dy;
+        double b = 2 * (fx * dx + fy * dy);   // dot product f·d
+        double c = (fx * fx + fy * fy) - (r * r);
+    
+        double discriminant = b * b - 4 * a * c;
+        if (discriminant < 0) {
+            // No intersection
+            return false;
+        }
+    
+        discriminant = Math.sqrt(discriminant);
+        double t1 = (-b - discriminant) / (2 * a);
+        double t2 = (-b + discriminant) / (2 * a);
+    
+        // Check if either intersection lies on the segment [0, 1]
+        return (t1 >= 0 && t1 <= 1) || (t2 >= 0 && t2 <= 1);
     }
 
 

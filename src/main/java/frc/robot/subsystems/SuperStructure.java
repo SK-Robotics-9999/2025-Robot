@@ -43,6 +43,7 @@ public class SuperStructure extends SubsystemBase {
     ALGAE_INTAKE_L2,
     PULLOUT_ALGAE_INTAKE_L3,
     PULLOUT_ALGAE_INTAKE_L2,
+    STOW_ALGAE,
     RELEASE_ALGAE_INTAKE,
     EJECT,
     START_AUTO
@@ -69,6 +70,7 @@ public class SuperStructure extends SubsystemBase {
     ALGAE_INTAKE_L2,
     PULLOUT_ALGAE_INTAKE_L3,
     PULLOUT_ALGAE_INTAKE_L2,
+    STOW_ALGAE,
     RELEASE_ALGAE_INTAKE,
     EJECT,
     START_AUTO
@@ -176,8 +178,13 @@ public class SuperStructure extends SubsystemBase {
           return CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3;
         }
         return CurrentSuperState.IDLE;
-        case RELEASE_ALGAE_INTAKE:
-          return CurrentSuperState.RELEASE_ALGAE_INTAKE;
+        case STOW_ALGAE:
+        if(previousSuperState==CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2 || previousSuperState==CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3){
+          return CurrentSuperState.STOW_ALGAE;
+        }
+        return CurrentSuperState.IDLE;
+      case RELEASE_ALGAE_INTAKE:
+        return CurrentSuperState.RELEASE_ALGAE_INTAKE;
         
     }
     return CurrentSuperState.IDLE;
@@ -248,6 +255,9 @@ public class SuperStructure extends SubsystemBase {
         break;
       case PULLOUT_ALGAE_INTAKE_L3:
         pulloutAlgaeIntakeL3();
+        break;
+      case STOW_ALGAE:
+        stowAlgae();
         break;
       case RELEASE_ALGAE_INTAKE:
         releaseAlgaeIntake();
@@ -359,7 +369,6 @@ public class SuperStructure extends SubsystemBase {
   }
 
   private void placeAtL4(){
-    SmartDashboard.putString("superStructure/state", "l4");
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.scoreL4);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.scoreL4);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
@@ -390,7 +399,6 @@ public class SuperStructure extends SubsystemBase {
   }
 
   private void algaeIntakeL3(){
-    SmartDashboard.putString("superStructure/state", "algael3");
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.algael3);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.algaeReefIntake);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
@@ -398,7 +406,6 @@ public class SuperStructure extends SubsystemBase {
   }
   
   private void algaeIntakeL2(){
-    SmartDashboard.putString("superStructure/state", "algael2");
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.algael2);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.algaeReefIntake);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
@@ -416,6 +423,15 @@ public class SuperStructure extends SubsystemBase {
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.pulloutAlgael2);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.pulloutAlgaeReefIntake);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
+  }
+
+  private void stowAlgae(){
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.HOME);
+    if(!elevatorNeedsToWait){
+      elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.HOME);
+    }
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
   }
   
@@ -440,10 +456,17 @@ public class SuperStructure extends SubsystemBase {
   public boolean getIsAtReefState(){
     return currentSuperState == CurrentSuperState.ALGAE_INTAKE_L2 
     || currentSuperState == CurrentSuperState.ALGAE_INTAKE_L3
+    || currentSuperState == CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2
+    || currentSuperState == CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3
+    || currentSuperState == CurrentSuperState.STOW_ALGAE //Just to make stuff work i guess
     || currentSuperState == CurrentSuperState.MOVE_TO_L1
     || currentSuperState == CurrentSuperState.MOVE_TO_L2
     || currentSuperState == CurrentSuperState.MOVE_TO_L3
     || currentSuperState == CurrentSuperState.MOVE_TO_L4
+    || currentSuperState == CurrentSuperState.PLACE_L1
+    || currentSuperState == CurrentSuperState.PLACE_L2
+    || currentSuperState == CurrentSuperState.PLACE_L3
+    || currentSuperState == CurrentSuperState.PLACE_L4
     ;
   }
 

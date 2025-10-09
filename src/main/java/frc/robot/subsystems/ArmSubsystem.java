@@ -236,7 +236,6 @@ public class ArmSubsystem extends SubsystemBase {
 
   //intended to be put in a run command, ff only calculates once
   public void setPIDtoAngle(DoubleSupplier setpoint){
-    SmartDashboard.putNumber("/arm/setpoint", setpoint.getAsDouble());
     double ff = armFF.calculate(Radians.convertFrom(armMotor.getEncoder().getPosition(), Degrees), 0.0);
         armMotor.getClosedLoopController()
           .setReference(
@@ -257,7 +256,6 @@ public class ArmSubsystem extends SubsystemBase {
   public Command hold(){
     return new RunCommand(()->{
         double ff = armFF.calculate(Math.toRadians(getAngle()), 0.0);
-        SmartDashboard.putNumber("/arm/realVoltage", ff);
         armMotor.setVoltage(ff);
       },
       this
