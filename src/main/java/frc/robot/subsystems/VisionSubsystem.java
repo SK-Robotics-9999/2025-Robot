@@ -100,7 +100,7 @@ public class VisionSubsystem extends SubsystemBase {
   public VisionSubsystem(SwerveSubsystem swerve, SuperStructure superStructure) {
     this.swerve = swerve;
     this.superStructure = superStructure;
-    // SmartDashboard.putData("visionfield", visionField);
+    SmartDashboard.putData("visionfield", visionField);
       
     try{
       leftCamera = Optional.of(new PhotonCamera("left_cam"));
@@ -148,7 +148,10 @@ public class VisionSubsystem extends SubsystemBase {
     // if(object.isPresent()){
     //   visionField.getObject("relativePose").setPose(new Pose2d(object.get(), new Rotation2d()));
     // }
-    visionField.setRobotPose(swerve.getPose());
+    // visionField.setRobotPose(swerve.getPose());
+
+    getObjectFieldRelativePose(swerve.getPose());
+    visionField.setRobotPose(getLastSeenObjectPose());
 
     updateOdometry();
 
@@ -200,7 +203,6 @@ public class VisionSubsystem extends SubsystemBase {
         
         Transform2d transform = position.minus(estimatedPose.get().estimatedPose.toPose2d());
 
-        visionField.getObject("robotToTag").setPose(new Pose2d(transform.getTranslation(), transform.getRotation()));
       }
     }
 
@@ -252,18 +254,18 @@ public class VisionSubsystem extends SubsystemBase {
     Optional<Translation2d> translation = getObjectTranslationRelative();
     if(translation.isEmpty()){return Optional.empty();}
     // final double middleToIntake = Inches.of(16.0).in(Meters);
-    final double middleToIntake = Inches.of(6).in(Meters);
-    Translation2d ojbectIntakeRelative = translation.get().minus(new Translation2d(middleToIntake, 0.0));
+    final double middleToIntake = Inches.of(0).in(Meters);
+    Translation2d ojbectIntakeRelative = translation.get();
     
     //technically off by 16 inches, but whatever.  
     Pose2d fieldRelativeNotePose = robotPose.plus(new Transform2d(ojbectIntakeRelative, ojbectIntakeRelative.getAngle()));
     lastSeenObjectPose = fieldRelativeNotePose;
     lastSeenTimestamp = Timer.getFPGATimestamp();
-    // visionField.getObject("coral").setPose(fieldRelativeNotePose); // whatevvvaaa
     return Optional.of(fieldRelativeNotePose);
   }
 
   public Pose2d getLastSeenObjectPose(){
+    visionField.getObject("coral").setPose(lastSeenObjectPose);
     return lastSeenObjectPose;
   }
 

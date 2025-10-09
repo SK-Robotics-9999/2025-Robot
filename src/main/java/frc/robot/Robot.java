@@ -79,6 +79,7 @@ public class Robot extends TimedRobot {
     // continue until interrupted by another command, remove
     // this line or comment it out.
     m_robotContainer.enableTeleopDriving();
+    m_robotContainer.swerveSubsystem.setMaxPIDSpeed(3.0);
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }

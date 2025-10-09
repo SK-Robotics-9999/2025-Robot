@@ -4,11 +4,15 @@
 
 package frc.robot;
 
+import static edu.wpi.first.units.Units.Inches;
+import static edu.wpi.first.units.Units.Meters;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Timer;
@@ -19,14 +23,19 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
-import edu.wpi.first.wpilibj2.command.ParallelDeadlineGroup;
 import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
-import frc.robot.subsystems.*;
+import frc.robot.subsystems.ArmSubsystem;
+import frc.robot.subsystems.ElevatorSubsystem;
+import frc.robot.subsystems.IntakeSubsystem;
+import frc.robot.subsystems.SuctionSubsystem;
+import frc.robot.subsystems.SuperStructure;
 import frc.robot.subsystems.SuperStructure.CurrentSuperState;
 import frc.robot.subsystems.SuperStructure.WantedSuperState;
+import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.VisionSubsystem;
 
 
 /** Add your docs here. */
@@ -55,25 +64,31 @@ public class Autos {
   IntakeSubsystem intakeSubsystem;
   VisionSubsystem visionSubsystem;
 
+  RobotContainer robotContainer;
+
 
   public Autos(
-      SwerveSubsystem swerveSubsystem,
-      SuperStructure superStructure,
-      ElevatorSubsystem elevatorSubsystem,
-      ArmSubsystem armSubsystem,
-      SuctionSubsystem suctionSubsystem,
-      IntakeSubsystem intakeSubsystem,
-      VisionSubsystem visionSubsystem
+      // SwerveSubsystem swerveSubsystem,
+      // SuperStructure superStructure,
+      // ElevatorSubsystem elevatorSubsystem,
+      // ArmSubsystem armSubsystem,
+      // SuctionSubsystem suctionSubsystem,
+      // IntakeSubsystem intakeSubsystem,
+      // VisionSubsystem visionSubsystem
+
+      RobotContainer robotContainer
 
       // Vision vision
   ){
-      this.swerveSubsystem = swerveSubsystem;
-      this.superStructure = superStructure;
-      this.elevatorSubsystem = elevatorSubsystem;
-      this.armSubsystem = armSubsystem;
-      this.suctionSubsystem = suctionSubsystem;
-      this.intakeSubsystem = intakeSubsystem;
-      this.visionSubsystem = visionSubsystem;
+      this.swerveSubsystem = robotContainer.swerveSubsystem;
+      this.superStructure = robotContainer.superStructure;
+      this.elevatorSubsystem = robotContainer.elevatorSubsystem;
+      this.armSubsystem = robotContainer.armSubsystem;
+      this.suctionSubsystem = robotContainer.suctionSubsystem;
+      this.intakeSubsystem = robotContainer.intakeSubsystem;
+      this.visionSubsystem = robotContainer.visionSubsystem;
+
+      this.robotContainer=robotContainer;
 
       // Add options to our chooser; This could be done manually if we wanted
       SmartDashboard.putData("AutoSelector/chooser",autoChooser);
@@ -190,30 +205,34 @@ public class Autos {
 public Command getIntakeSequence(Supplier<Pose2d> backupPose, Supplier<Pose2d> offsetPose, Supplier<Pose2d> scoringPose){
   return new SequentialCommandGroup(
     new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, backupPose.get()), swerveSubsystem),
-    waitUntil(swerveSubsystem::getCloseEnough),
+    waitUntil(()->swerveSubsystem.getOnTarget(backupPose.get(), Inches.of(8).in(Meters), 5.0, 2.0)),
     new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralSource(swerveSubsystem.getPose())), swerveSubsystem),
-    
+    new InstantCommand(()->swerveSubsystem.setMaxPIDSpeed(1.5)),
     new ParallelRaceGroup(
       new SequentialCommandGroup(
-        new WaitCommand(1.5),
         waitUntil(()->visionSubsystem.getObjectFieldRelativePose(swerveSubsystem.getPose()).isPresent()),
         new InstantCommand(()->{
-          if(Timer.getFPGATimestamp()-visionSubsystem.getLastSeenTimestamp()<2.0 && !FieldNavigation.getTooCloseToSource(visionSubsystem.getLastSeenObjectPose()))
-          swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, visionSubsystem.getLastSeenObjectPose());
+          Pose2d interpolated = swerveSubsystem.getPose().interpolate(visionSubsystem.getLastSeenObjectPose(), 0.3);
+          swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, new Pose2d(interpolated.getX(), interpolated.getY(), visionSubsystem.getLastSeenObjectPose().getRotation().plus(new Rotation2d(Math.toRadians(5)))));
         }),
+        waitUntil(()->swerveSubsystem.getOnTarget(Inches.of(8).in(Meters), 5, 2.0)),
+        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, visionSubsystem.getLastSeenObjectPose())),
         new RunCommand(()->{})
       ),
 
       new SequentialCommandGroup(
        // new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralSource(swerveSubsystem.getPose())), swerveSubsystem),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
-        waitUntil(swerveSubsystem::getOnTarget)
+        waitUntil(swerveSubsystem::getOnTarget, intakeSubsystem::hasCoral)
       )
     )
-    .until(intakeSubsystem::hasCoral)
+    .withTimeout(5.0)
     .until(()->FieldNavigation.getTooCloseToSource(swerveSubsystem.getPose())),
-    new ConditionalCommand(new WaitCommand(1.5), new InstantCommand(), ()->FieldNavigation.gotTooClose),
+    new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.STOP)),
+    new ConditionalCommand(new WaitCommand(0.5), new InstantCommand(), ()->FieldNavigation.gotTooClose),
     
+    new InstantCommand(()->swerveSubsystem.setMaxPIDSpeed(3.0)),
+
     new ParallelCommandGroup(
       new SequentialCommandGroup(
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, offsetPose.get()), swerveSubsystem),
@@ -223,66 +242,49 @@ public Command getIntakeSequence(Supplier<Pose2d> backupPose, Supplier<Pose2d> o
       ),
 
       new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
-        waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getCoralSuctionGood),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4), superStructure),
-        waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget)
+        robotContainer.pickupCoralSequence(),
+        robotContainer.moveAndPlace(WantedSuperState.MOVE_TO_L4, WantedSuperState.PLACE_L4)
       ).until(()->FieldNavigation.gotTooClose && !intakeSubsystem.hasCoral())
     )
-    .withTimeout(5.0),
-
-    new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PLACE_L4)),
-    waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget).withTimeout(1.5),
-    new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME))
+    .withTimeout(5.0)
   );
 }
 
-public Command L4RightAuto(){
-    return Commands.sequence(
-      //the right to the vision of the apriltag is left when facing at the apriltag.
-      new InstantCommand(()->System.out.println("L4RightAuto")),
+public Command getStartAuto(Supplier<Pose2d> offsetPose, Supplier<Pose2d> scorePose){
+  return Commands.sequence(
+      new InstantCommand(()->robotContainer.automationEnabled=true),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
       waitUntil(suctionSubsystem::getCoralSuctionGood),
       new ParallelCommandGroup(
         new SequentialCommandGroup(
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
+          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, offsetPose.get()), swerveSubsystem),
           waitUntil(swerveSubsystem::getCloseEnough),
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
+          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, scorePose.get()), swerveSubsystem),
           waitUntil(swerveSubsystem::getOnTarget)
         ),
           new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4))
       ),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PLACE_L4)),
-      new WaitCommand(1.5), //technically should be elevator on target, etc.
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME))
+      waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget).withTimeout(1.5)
     );
-  }
-    
-  public Command L4LeftAuto(){
+}
+
+public Command L4RightAuto(){
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4LeftAuto")),
-      //the right to the vision of the apriltag is left when facing at the apriltag.
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
-      waitUntil(suctionSubsystem::getCoralSuctionGood),
-
-      new ParallelCommandGroup(
-        new SequentialCommandGroup(
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
-          waitUntil(swerveSubsystem::getCloseEnough),
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
-          waitUntil(swerveSubsystem::getOnTarget)
-        ),
-
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4))
-      ),
-
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PLACE_L4)),
+      getStartAuto(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralRight(swerveSubsystem.getPose())),
       new WaitCommand(1.5), //technically should be elevator on target, etc.
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME))
+      );
+    }
+    
+    public Command L4LeftAuto(){
+      return Commands.sequence(
+        new InstantCommand(()->System.out.println("L4LeftAuto")),
+        //the right to the vision of the apriltag is left when facing at the apriltag.
+        getStartAuto(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralLeft(swerveSubsystem.getPose())),
+        new WaitCommand(1.5), //technically should be elevator on target, etc.
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME))
     );
   }
 
@@ -290,49 +292,17 @@ public Command L4RightAuto(){
   public Command L4LongRightAuto(){
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4RightAutoLong")),
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
-      waitUntil(suctionSubsystem::getCoralSuctionGood),
-
-      new ParallelCommandGroup(
-        new SequentialCommandGroup(
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
-          waitUntil(swerveSubsystem::getCloseEnough),
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
-          waitUntil(swerveSubsystem::getOnTarget)
-        ),
-
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4))
-      ),
-
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PLACE_L4)),
-      waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget).withTimeout(1.5),
-      
-      getIntakeSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralRight(swerveSubsystem.getPose())),
+      getStartAuto(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralRight(swerveSubsystem.getPose())),
+      getIntakeSequence(()->new Pose2d(3.929,2.046, new Rotation2d(Math.toRadians(-152))), ()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralRight(swerveSubsystem.getPose())),
       getIntakeSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralLeft(swerveSubsystem.getPose()))
     );
   }
 
   public Command L4LongLeftAuto(){
     return Commands.sequence(
-      new InstantCommand(()->System.out.println("L4RightAutoLong")),
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
-      waitUntil(suctionSubsystem::getCoralSuctionGood),
-
-      new ParallelCommandGroup(
-        new SequentialCommandGroup(
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
-          waitUntil(swerveSubsystem::getCloseEnough),
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
-          waitUntil(swerveSubsystem::getOnTarget)
-        ),
-
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4))
-      ),
-
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PLACE_L4)),
-      waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget).withTimeout(1.5),
-      
-      getIntakeSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralLeft(swerveSubsystem.getPose())),
+      new InstantCommand(()->System.out.println("L4LeftAutoLong")),
+      getStartAuto(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralLeft(swerveSubsystem.getPose())),
+      getIntakeSequence(()->new Pose2d(3.929,6.006, new Rotation2d(Math.toRadians(152))), ()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralLeft(swerveSubsystem.getPose())),
       getIntakeSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralRight(swerveSubsystem.getPose()))
     );
   }

@@ -57,7 +57,7 @@ public class RobotContainer {
   private boolean hasCoral=false;//TODO: technically true at the start of auto, will fix after
 
   private boolean coralMode=true;
-  private boolean automationEnabled=true;
+  public boolean automationEnabled=true;
 
   // The robot's subsystems and commands are defined here...
   SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
@@ -72,7 +72,7 @@ public class RobotContainer {
   VisionSubsystem visionSubsystem = new VisionSubsystem(swerveSubsystem, superStructure);
   // QuestNavSubsystem questNavSubsystem = new QuestNavSubsystem();
 
-  public final Autos autos = new Autos(swerveSubsystem, superStructure, elevatorSubsystem, armSubsystem, suctionSubsystem, intakeSubsystem, visionSubsystem);
+  public final Autos autos = new Autos(this);
   
   CommandXboxController driver = new CommandXboxController(0);
 
@@ -261,7 +261,7 @@ public class RobotContainer {
     );
   }
 
-  private Command pickupCoralSequence(){
+  public Command pickupCoralSequence(){
     return new SequentialCommandGroup(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
       waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
@@ -286,7 +286,7 @@ public class RobotContainer {
     }, superStructure);
   }
 
-  private Command moveAndPlace(WantedSuperState moveTo, WantedSuperState placeAt){
+  public Command moveAndPlace(WantedSuperState moveTo, WantedSuperState placeAt){
     return new SequentialCommandGroup(
       new InstantCommand(()->superStructure.SetWantedState(moveTo),superStructure),
       new ConditionalCommand(

@@ -53,14 +53,16 @@ public class SwerveSubsystem extends SubsystemBase {
     DRIVE_TO_POINT,
     IDLE,
     TELEOP_DRIVE,
-    ASSISTED_TELEOP_DRIVE
+    ASSISTED_TELEOP_DRIVE,
+    STOP
   }
 
   public static enum SystemState{
     DRIVING_TO_POINT,
     IDLING,
     TELEOP_DRIVING,
-    ASSISTED_TELEOP_DRIVING
+    ASSISTED_TELEOP_DRIVING,
+    STOPPED
   }
 
   private WantedState wantedState = WantedState.IDLE;
@@ -140,6 +142,8 @@ public class SwerveSubsystem extends SubsystemBase {
         return SystemState.DRIVING_TO_POINT;
       case ASSISTED_TELEOP_DRIVE:
         return SystemState.ASSISTED_TELEOP_DRIVING;
+      case STOP:
+        return SystemState.STOPPED;
     }
     return SystemState.IDLING;
   }
@@ -163,6 +167,9 @@ public class SwerveSubsystem extends SubsystemBase {
         else{
           driveAllianceManaged(()->translationX.getAsDouble()+xAssister.getAsDouble(), ()->translationY.getAsDouble()+yAssister.getAsDouble(), angularRotationX);
         }
+        break;
+      case STOPPED:
+        driveAllianceManaged(()->0, ()->0, ()->0);
         break;
     }}
     
@@ -366,8 +373,23 @@ public class SwerveSubsystem extends SubsystemBase {
     && getVelocity()<Inches.of(3.0).in(Meters);
   }
   
+  /**
+   * @param angularTolerance in degrees
+   */
   public boolean getOnTarget(Pose2d pose, double translationalTolerance, double angularTolerance, double velocityTolerance){
     Transform2d delta = pose.minus(getPose());
+    
+    return delta.getTranslation().getNorm()<translationalTolerance
+    && delta.getRotation().getDegrees()<angularTolerance
+    && systemState==SystemState.DRIVING_TO_POINT
+    && getVelocity()< velocityTolerance;    
+  }
+
+  /**
+   * @param angularTolerance in degrees
+   */
+  public boolean getOnTarget(double translationalTolerance, double angularTolerance, double velocityTolerance){
+    Transform2d delta = targetPose.minus(getPose());
     
     return delta.getTranslation().getNorm()<translationalTolerance
     && delta.getRotation().getDegrees()<angularTolerance
@@ -386,7 +408,7 @@ public class SwerveSubsystem extends SubsystemBase {
     && systemState==SystemState.DRIVING_TO_POINT
     && tagToTarget.getX()<FieldNavigation.botCenterToRearX+1
     && Math.abs(tagToTarget.getMeasureY().in(Inches)) <25.0
-    && getVelocity()<Inches.of(6.0).in(Meters);
+    && getVelocity()<Inches.of(3.0).in(Meters);
   }
   
   public boolean getCloseEnough(){
@@ -394,9 +416,9 @@ public class SwerveSubsystem extends SubsystemBase {
 
     return delta.getTranslation().getNorm()<Inches.of(6.0).in(Meters) 
     && delta.getRotation().getDegrees()<10.0
-    && swerveDrive.getFieldVelocity().omegaRadiansPerSecond<1.0
+    && swerveDrive.getFieldVelocity().omegaRadiansPerSecond<0.5
     && systemState==SystemState.DRIVING_TO_POINT
-    && getVelocity()<1.0;
+    && getVelocity()<0.75;
     
   }
   
@@ -416,6 +438,10 @@ public class SwerveSubsystem extends SubsystemBase {
     odometryField.getObject("coral").setPose(fieldRelativeNotePose); // whatevvvaaa
     return fieldRelativeNotePose;
     
+  }
+
+  public void setMaxPIDSpeed(double max){
+    this.maxVelocityForPID = max;
   }
   
   public Command pidToPoseCommand(Pose2d pose){
