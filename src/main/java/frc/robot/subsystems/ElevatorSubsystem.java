@@ -48,8 +48,10 @@ public class ElevatorSubsystem extends SubsystemBase {
   public final static double stage1To2Height = 24.5;//don't want to convert rn
   
   private final double maxVelocity = 90.0; //inches per second
-  private final double maxAccel = 200.0; //inches per second squared
+  private final double maxAccel = 350.0; //inches per second squared
+  private final double maxAccelDown = 150.0; //inches per second squared
   private final TrapezoidProfile trapProfile = new TrapezoidProfile(new TrapezoidProfile.Constraints(maxVelocity, maxAccel));
+  private final TrapezoidProfile trapDownProfile = new TrapezoidProfile(new TrapezoidProfile.Constraints(maxVelocity, maxAccelDown));
     
   ElevatorFeedforward elevatorFF = new ElevatorFeedforward(0.08, 0.22, 0.0);
   final ElevatorFeedforward lowElevatorFF = new ElevatorFeedforward(0.08, 0.22, 0.121);
@@ -139,7 +141,8 @@ public class ElevatorSubsystem extends SubsystemBase {
     // SmartDashboard.putBoolean("/elevator/limitSwitchEnabled", !bottomLimitSwitch.get());
     // SmartDashboard.putBoolean("/elevator/hasReset", hasReset);
     // SmartDashboard.putBoolean("/elevator/motorsInverted", elevatorMotorBack.configAccessor.getFollowerModeInverted());
-    SmartDashboard.putNumber("/elevator/target", trapGoal.position);
+    // SmartDashboard.putNumber("/elevator/target", trapGoal.position);
+    // SmartDashboard.putNumber("/elevator/trapStateInches", trapState.position);
 
     // SmartDashboard.putNumber("/elevator/voltage", elevatorMotorFront.getAppliedOutput()*elevatorMotorFront.getBusVoltage());
     // SmartDashboard.putNumber("/elevator/voltageBack", -elevatorMotorBack.getAppliedOutput()*elevatorMotorBack.getBusVoltage());
@@ -284,7 +287,8 @@ public class ElevatorSubsystem extends SubsystemBase {
   // }
 
   public void SetElevatorPositionTrap(){
-    trapState = trapProfile.calculate(0.02, trapState, trapGoal);
+    TrapezoidProfile tempProfile = trapGoal.position>getHeight() ? trapProfile : trapDownProfile;
+    trapState = tempProfile.calculate(0.02, trapState, trapGoal);
     double ff = elevatorFF.calculate(trapState.velocity);
     elevatorMotorFront.getClosedLoopController()
       .setReference(

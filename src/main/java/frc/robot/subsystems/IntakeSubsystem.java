@@ -293,7 +293,9 @@ public class IntakeSubsystem extends SubsystemBase {
 
   public void zeroIntake(){
     pidTargetIntake = pivotMotor.getAbsoluteEncoder().getPosition()-5.0; //cant use getAngle method, i messed it up
+    pidTargetIntake%=162;
     pidTargetSafe = pidTargetIntake-15.0; //cant use getAngle method, i messed it up
+    pidTargetSafe%=162;
 
   }
 

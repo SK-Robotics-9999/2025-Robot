@@ -352,7 +352,7 @@ public class RobotContainer {
     driver.povUp().onTrue(
       new SequentialCommandGroup(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure),
-        new WaitCommand(2),
+        new WaitCommand(5),
         new InstantCommand(()->intakeSubsystem.zeroIntake())
       )
       );

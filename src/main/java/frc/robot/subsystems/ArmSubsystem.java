@@ -57,7 +57,7 @@ public class ArmSubsystem extends SubsystemBase {
   private double targetAngle = 90.0;
 
   private final double maxVelocity = 450.0; //degrees per second, i hope
-  private final double maxAccel = 750.0;
+  private final double maxAccel = 1300.0; //already maxes out, beyond maxing out, cant exactly follow profile, but pushes it to be faster
   private final double maxAlgaeAccel = 375.0;
   private final TrapezoidProfile trapProfile = new TrapezoidProfile(
     new TrapezoidProfile.Constraints(maxVelocity, maxAccel)
@@ -176,7 +176,7 @@ public class ArmSubsystem extends SubsystemBase {
   private SparkBaseConfig getArmConfig() {
     SparkBaseConfig armConf = new SparkMaxConfig()
       .inverted(false)
-      .smartCurrentLimit(20) //don't need that much but wtv
+      .smartCurrentLimit(40) //don't need that much but wtv
       .closedLoopRampRate(0.02)
       .idleMode(IdleMode.kBrake)
     ;
