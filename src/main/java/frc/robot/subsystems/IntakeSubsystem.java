@@ -39,8 +39,8 @@ public class IntakeSubsystem extends SubsystemBase {
   
   private boolean intaking = false;
 
-  public double pidTargetIntake = 157.0; // close to absConversionFactor
-  public double pidTargetSafe = pidTargetIntake-15.0; //out of reach from pickup
+  public double pidTargetIntake = 155.0; // close to absConversionFactor
+  public double pidTargetSafe = pidTargetIntake-11.0; //out of reach from pickup
 
   public enum WantedState{
     HOME,
@@ -124,7 +124,7 @@ public class IntakeSubsystem extends SubsystemBase {
     // SmartDashboard.putNumber("/intake/pivotMotorABS", pivotMotor.getAbsoluteEncoder().getPosition());
     // SmartDashboard.putNumber("/intake/pivotMotor", getAngle());
     // SmartDashboard.putBoolean("/intake/intaking", getIsIntaking());
-    // SmartDashboard.putNumber("/intake/current", pivotMotor.getOutputCurrent());
+    SmartDashboard.putNumber("/intake/current", pivotMotor.getOutputCurrent());
     SmartDashboard.putBoolean("/intake/beambreak", !beambreak.get());
     // SmartDashboard.putBoolean("/intake/intaking", intaking);
     // SmartDashboard.putNumber("/intake/passthroughVelocity", passthroughLeft.getEncoder().getVelocity());
@@ -247,7 +247,7 @@ public class IntakeSubsystem extends SubsystemBase {
 
   public void intakeStuff(){
     if(pivotMotor.getAbsoluteEncoder().getPosition()>130.0){
-      pivotMotor.setVoltage(-0.5);
+      pivotMotor.setVoltage(-1.0);
       // stopRollers();
       rollStuff();
       stopPassthrough();
@@ -292,9 +292,9 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public void zeroIntake(){
-    pidTargetIntake = pivotMotor.getAbsoluteEncoder().getPosition()-5.0; //cant use getAngle method, i messed it up
+    pidTargetIntake = pivotMotor.getAbsoluteEncoder().getPosition()-7.0; //cant use getAngle method, i messed it up
     pidTargetIntake%=162;
-    pidTargetSafe = pidTargetIntake-15.0; //cant use getAngle method, i messed it up
+    pidTargetSafe = pidTargetIntake-11.0; //cant use getAngle method, i messed it up
     pidTargetSafe%=162;
 
   }

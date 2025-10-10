@@ -5,8 +5,8 @@
     import com.revrobotics.spark.SparkBase.PersistMode;
     import com.revrobotics.spark.SparkBase.ResetMode;
     import com.revrobotics.spark.SparkLowLevel.MotorType;
-import com.revrobotics.spark.SparkFlex;
-import com.revrobotics.spark.SparkMax;
+    import com.revrobotics.spark.SparkFlex;
+    import com.revrobotics.spark.SparkMax;
     import com.revrobotics.spark.config.SparkBaseConfig;
     import com.revrobotics.spark.config.SparkMaxConfig;
 
@@ -158,6 +158,11 @@ import com.revrobotics.spark.SparkMax;
         //for coral
         public boolean getCoralSuctionGood(){
             return getPressure()>35.0;
+        }
+
+        //Is it more than the minimum that a no-seal could get?
+        public boolean getCoralSuctionApplied(){
+            return getPressure()>15.0;
         }
 
         public boolean getAlgaeSuctionGood(){

@@ -150,8 +150,9 @@ public class VisionSubsystem extends SubsystemBase {
     // }
     // visionField.setRobotPose(swerve.getPose());
 
-    getObjectFieldRelativePose(swerve.getPose());
-    visionField.setRobotPose(getLastSeenObjectPose());
+    // getObjectFieldRelativePose(swerve.getPose());
+    // getLastSeenObjectPose();
+    visionField.setRobotPose(swerve.getPose());
 
     updateOdometry();
 
@@ -179,8 +180,9 @@ public class VisionSubsystem extends SubsystemBase {
         || swerve.getVelocity()>2 
         || swerve.getAngularVelocity()>Math.toRadians(45.0)
         || superStructure.isIntaking()
+        //add if target is more than 10 or whatever
       ){
-        return;
+        continue;
       }
 
       Pose2d position = aprilTagFieldLayout.getTagPose(result.getBestTarget().getFiducialId()).orElse(new Pose3d()).toPose2d();

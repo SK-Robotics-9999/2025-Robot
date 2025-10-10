@@ -147,14 +147,14 @@ public class RobotContainer {
       //Move To l1
     driver.a().onTrue(
       pickupCoralSequence()
-      .until(()->hasCoral)
+      .until(()->getHasCoral())
       .andThen(moveAndPlace(WantedSuperState.MOVE_TO_L1, WantedSuperState.PLACE_L1))
     );
       
     //Move To l2
     driver.b().onTrue(new ConditionalCommand(
       pickupCoralSequence()
-      .until(()->hasCoral)
+      .until(()->getHasCoral())
       .andThen(moveAndPlace(WantedSuperState.MOVE_TO_L2, WantedSuperState.PLACE_L2)),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L2), superStructure),
       ()->coralMode
@@ -163,7 +163,7 @@ public class RobotContainer {
     //Move To l3
     driver.x().onTrue(new ConditionalCommand(
       pickupCoralSequence()
-      .until(()->hasCoral)
+      .until(()->getHasCoral())
       .andThen(moveAndPlace(WantedSuperState.MOVE_TO_L3, WantedSuperState.PLACE_L3)),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3),superStructure),
       ()->coralMode
@@ -172,7 +172,7 @@ public class RobotContainer {
     //Move to L4
     driver.y().onTrue(new ConditionalCommand(
       pickupCoralSequence()
-      .until(()->hasCoral)
+      .until(()->getHasCoral())
       .andThen(moveAndPlace(WantedSuperState.MOVE_TO_L4, WantedSuperState.PLACE_L4)),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_BARGE),superStructure),
       ()->coralMode
@@ -229,12 +229,12 @@ public class RobotContainer {
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralMid(swerveSubsystem.getPose())), swerveSubsystem),
         new ConditionalCommand(
           new SequentialCommandGroup(
-            waitUntil(swerveSubsystem::getOnTarget, suctionSubsystem::getAlgaeSuctionGood),
+            waitUntil(suctionSubsystem::getAlgaeSuctionGood),
+            new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5)),
             pulloutAlgae(),
             swerveSubsystem.driveAwayFromReef(driver),
             waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())),
-            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE), superStructure),
-            new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5))
+            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE), superStructure)
           ),
           new RunCommand(()->{}),
           ()->automationEnabled && !coralMode
@@ -310,6 +310,11 @@ public class RobotContainer {
       ()->-driver.getLeftX(),
       ()->-driver.getRightX()
     );
+  }
+
+  public boolean getHasCoral(){
+    hasCoral = hasCoral && coralMode && suctionSubsystem.getCoralSuctionApplied();
+    return hasCoral;
   }
 
   public boolean getCoralMode(){

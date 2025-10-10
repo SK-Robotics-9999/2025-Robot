@@ -63,6 +63,20 @@ public class FieldNavigation {
         add(AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(12).get().toPose2d());
     }};
 
+    public static List<Pose2d> customPosesSource = new ArrayList<>(){{
+        add(new Pose2d(1.9, 1.1, new Rotation2d(Math.toRadians(-170))));
+        add(new Pose2d(1.9, 2*4.026-1.1, new Rotation2d(Math.toRadians(170))));
+        add(new Pose2d(17.55-1.9, 1.1, new Rotation2d(Math.toRadians(-10))));
+        add(new Pose2d(17.55-1.9, 2*4.026-1.1, new Rotation2d(Math.toRadians(10))));
+    }};
+
+    public static List<Pose2d> customPosesBackup = new ArrayList<>(){{
+        add(new Pose2d(4.5, 2.0, new Rotation2d(Math.toRadians(-170))));
+        add(new Pose2d(4.5, 2*4.026-2.0, new Rotation2d(Math.toRadians(170))));
+        add(new Pose2d(17.55-4.5, 2.0, new Rotation2d(Math.toRadians(-10))));
+        add(new Pose2d(17.55-4.5, 2*4.026-2.0, new Rotation2d(Math.toRadians(10))));
+    }};
+
     public static List<Pose2d> tagsProcessor = new ArrayList<>(){{
         add(AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(3).get().toPose2d());
         add(AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(16).get().toPose2d());
@@ -139,6 +153,16 @@ public class FieldNavigation {
         return nearest.transformBy(coralSource);
 
         
+    }
+
+    public static Pose2d getCustomSource(Pose2d currentPose){
+        var nearest = currentPose.nearest(customPosesSource);
+        return nearest;
+    }
+
+    public static Pose2d getCustomBackup(Pose2d currentPose){
+        var nearest = currentPose.nearest(customPosesBackup);
+        return nearest;
     }
 
     public static Pose2d getReefAlgae(Pose2d currentPose){

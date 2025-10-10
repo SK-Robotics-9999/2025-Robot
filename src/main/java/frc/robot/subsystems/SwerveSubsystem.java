@@ -44,7 +44,8 @@ public class SwerveSubsystem extends SubsystemBase {
 
   
   double maximumSpeed = 5.033;
-  double maxVelocityForPID = 3.0; //meters
+  public static final double MAXVELOCITYFORPID = 3.0; //meters
+  double maxVelocityForPID = MAXVELOCITYFORPID; //meters
   double maxRotationalVelocityForPID = 4.0;
 
   SwerveDrive swerveDrive;
@@ -78,6 +79,8 @@ public class SwerveSubsystem extends SubsystemBase {
   private final PIDController autoCont = new PIDController(5, 0, 0.1);
   private final PIDController teleOpCont = new PIDController(5, 0, 0.1);
 
+  private final PIDController thetaCont = new PIDController(5.0, 0, 0);
+
   private double staticFrictionConstant = 0.01;
 
   DoubleSupplier translationX = ()->0.0;
@@ -109,6 +112,8 @@ public class SwerveSubsystem extends SubsystemBase {
   }
   SwerveDriveTelemetry.verbosity = TelemetryVerbosity.NONE;
   swerveDrive.resetOdometry(new Pose2d(1,1,new Rotation2d()));
+
+  thetaCont.enableContinuousInput(-Math.PI, Math.PI);
 }
 
   @Override
@@ -317,6 +322,8 @@ public class SwerveSubsystem extends SubsystemBase {
     double ycomponent = angle.getSin()*velocity;
     double rotationalComponent = Math.min(delta.getRotation().getRadians()*5.0,
       maxRotationalVelocityForPID);
+    // double rotationalComponent = Math.min(thetaCont.calculate(pose.getRotation().getRadians(), getPose().getRotation().getRadians()),
+    //   maxRotationalVelocityForPID);
 
     swerveDrive.setChassisSpeeds(new ChassisSpeeds(
       xcomponent,
@@ -403,22 +410,19 @@ public class SwerveSubsystem extends SubsystemBase {
     
     Transform2d tagToTarget = targetPose.minus(FieldNavigation.getNearestReef(getPose()));
     
-    return delta.getTranslation().getNorm()<Inches.of(1.0).in(Meters) 
-    && delta.getRotation().getDegrees()<3.0
-    && systemState==SystemState.DRIVING_TO_POINT
+    return this.getOnTarget()
     && tagToTarget.getX()<FieldNavigation.botCenterToRearX+1
-    && Math.abs(tagToTarget.getMeasureY().in(Inches)) <25.0
-    && getVelocity()<Inches.of(3.0).in(Meters);
+    && Math.abs(tagToTarget.getMeasureY().in(Inches)) <25.0;
   }
   
   public boolean getCloseEnough(){
     Transform2d delta = targetPose.minus(getPose());
 
-    return delta.getTranslation().getNorm()<Inches.of(6.0).in(Meters) 
+    return delta.getTranslation().getNorm()<Inches.of(4.0).in(Meters) 
     && delta.getRotation().getDegrees()<10.0
-    && swerveDrive.getFieldVelocity().omegaRadiansPerSecond<0.5
+    && swerveDrive.getFieldVelocity().omegaRadiansPerSecond<0.3
     && systemState==SystemState.DRIVING_TO_POINT
-    && getVelocity()<0.75;
+    && getVelocity()<0.4;
     
   }
   
