@@ -317,6 +317,10 @@ public class ElevatorSubsystem extends SubsystemBase {
   public boolean getOnTarget(){
     return MathUtil.isNear(trapGoal.position, getHeight(), 1.0);
   }
+
+  public boolean getOnTarget(double position){
+    return MathUtil.isNear(position, getHeight(), 1.0);
+  }
   //doesn't work
   public boolean getArmCanDown(){
     //intake height, not prepare to intake height, as it is simply the minimum possible height to rotate arm 360

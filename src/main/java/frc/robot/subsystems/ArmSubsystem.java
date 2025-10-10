@@ -319,6 +319,10 @@ public class ArmSubsystem extends SubsystemBase {
     return MathUtil.isNear(trapGoal.position, getAngle(), 4);
   }
 
+  public boolean getOnTarget(double position){
+    return MathUtil.isNear(position, getAngle(), 4);
+  }
+
   public boolean getArmIsSafe(){
     return getAngle()>ArmConstants.lowestAtZeroElevator;
   } 
