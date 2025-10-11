@@ -46,7 +46,8 @@ public class SwerveSubsystem extends SubsystemBase {
   double maximumSpeed = 5.033;
   public static final double MAXVELOCITYFORPID = 3.0; //meters
   double maxVelocityForPID = MAXVELOCITYFORPID; //meters
-  double maxRotationalVelocityForPID = 4.0;
+  public static final double MAXOMEGA = 4.0; //radians per second
+  double maxRotationalVelocityForPID = MAXOMEGA;
 
   SwerveDrive swerveDrive;
 
@@ -446,6 +447,10 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public void setMaxPIDSpeed(double max){
     this.maxVelocityForPID = max;
+  }
+
+  public void setMaxPIDOmega(double max){
+    this.maxRotationalVelocityForPID = max;
   }
   
   public Command pidToPoseCommand(Pose2d pose){

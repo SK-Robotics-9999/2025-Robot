@@ -27,7 +27,7 @@
         SparkFlex suctionMotor = new SparkFlex(MotorConstants.kSuctionID, MotorType.kBrushless);
 
         private final double targetPressureCoral = 40.0;
-        private final double targetPressureAlgae = 50.0;
+        private final double targetPressureAlgae = 60.0;
 
         PIDController pid = new PIDController(12.0/10.0, 0, 0);
 

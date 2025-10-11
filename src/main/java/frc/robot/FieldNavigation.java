@@ -10,6 +10,7 @@ import static edu.wpi.first.units.Units.Degrees;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 
 import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
@@ -39,6 +40,13 @@ public class FieldNavigation {
 
     static boolean gotTooClose=false;
 
+    static BooleanSupplier isRed = () -> {
+    var alliance = DriverStation.getAlliance();
+    if (alliance.isPresent()) {
+      return alliance.get() == DriverStation.Alliance.Red;
+    }
+    return false;
+  };
 
     public static List<Pose2d> tagsReef = new ArrayList<>(){{
         add(AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(6).get().toPose2d());
@@ -146,6 +154,30 @@ public class FieldNavigation {
     public static Pose2d getOffsetCoralRight(Pose2d currentPose){
         var nearest = currentPose.nearest(tagsReef);
         return nearest.transformBy(coralApproachOffsetRight);
+    }
+
+    public static Pose2d getCoralTag(boolean left, int blueTagID, int redTagID){
+        Pose2d tagPose = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(blueTagID).get().toPose2d();
+        if(isRed.getAsBoolean()){
+            tagPose = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(redTagID).get().toPose2d();
+        }
+
+        if(left){
+            return tagPose.transformBy(coralLeft);
+        }
+        return tagPose.transformBy(coralRight);
+    }
+
+    public static Pose2d getOffsetCoralTag(boolean left, int blueTagID, int redTagID){
+        Pose2d tagPose = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(blueTagID).get().toPose2d();
+        if(isRed.getAsBoolean()){
+            tagPose = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(redTagID).get().toPose2d();
+        }
+
+        if(left){
+            return tagPose.transformBy(coralApproachOffsetLeft);
+        }
+        return tagPose.transformBy(coralApproachOffsetRight);
     }
 
     public static Pose2d getCoralSource(Pose2d currentPose){

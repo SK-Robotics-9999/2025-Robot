@@ -126,7 +126,8 @@ public class RobotContainer {
     //intake
     driver.leftTrigger()
     .whileTrue(
-      swerveSubsystem.driveAwayFromReef(driver).withTimeout(5)
+      swerveSubsystem.driveAwayFromReef(driver)
+        .withTimeout(5)
       .andThen(new ConditionalCommand(
         swerveSubsystem.intakeAssist(visionSubsystem, driver),
         new InstantCommand(),
@@ -204,7 +205,7 @@ public class RobotContainer {
 
     driver.leftBumper().whileTrue(new SequentialCommandGroup(
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
-        waitUntil(swerveSubsystem::getCloseEnough),
+        waitUntil(swerveSubsystem::getCloseEnough).withTimeout(3.0),
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
         waitUntil(()->false)
       )
@@ -215,7 +216,7 @@ public class RobotContainer {
     driver.rightBumper().whileTrue(new SequentialCommandGroup(
         //the right to the vision of the apriltag is left when facing at the apriltag.
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
-        waitUntil(swerveSubsystem::getCloseEnough),
+        waitUntil(swerveSubsystem::getCloseEnough).withTimeout(3.0),
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
         waitUntil(()->false)
       )
@@ -230,7 +231,7 @@ public class RobotContainer {
         new ConditionalCommand(
           new SequentialCommandGroup(
             waitUntil(suctionSubsystem::getAlgaeSuctionGood),
-            new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5)),
+            // new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5)),
             pulloutAlgae(),
             swerveSubsystem.driveAwayFromReef(driver),
             waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())),
@@ -247,6 +248,7 @@ public class RobotContainer {
     driver.povUp().onTrue(
       new SequentialCommandGroup(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure),
+        new InstantCommand(()->enableTeleopDriving()),
         new WaitCommand(5),
         new InstantCommand(()->intakeSubsystem.zeroIntake())
       )

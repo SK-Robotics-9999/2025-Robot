@@ -91,8 +91,7 @@ public class VisionSubsystem extends SubsystemBase {
     new Rotation3d(0.0, Math.toRadians(25.77), Math.toRadians(14.08))
   );
 
-  Pose2d lastSeenObjectPose = new Pose2d();
-  double lastSeenTimestamp = -1.0;
+  Optional<Pose2d> lastSeenObjectPose = Optional.empty();
 
   Field2d visionField = new Field2d();
 
@@ -255,23 +254,23 @@ public class VisionSubsystem extends SubsystemBase {
   public Optional<Pose2d> getObjectFieldRelativePose(Pose2d robotPose){
     Optional<Translation2d> translation = getObjectTranslationRelative();
     if(translation.isEmpty()){return Optional.empty();}
-    // final double middleToIntake = Inches.of(16.0).in(Meters);
-    final double middleToIntake = Inches.of(0).in(Meters);
-    Translation2d ojbectIntakeRelative = translation.get();
+    final double middleToIntake = Inches.of(16.0).in(Meters);
+    Translation2d ojbectIntakeRelative = translation.get().minus(new Translation2d(middleToIntake, new Rotation2d()));
     
     //technically off by 16 inches, but whatever.  
     Pose2d fieldRelativeNotePose = robotPose.plus(new Transform2d(ojbectIntakeRelative, ojbectIntakeRelative.getAngle()));
-    lastSeenObjectPose = fieldRelativeNotePose;
-    lastSeenTimestamp = Timer.getFPGATimestamp();
+    lastSeenObjectPose = Optional.of(fieldRelativeNotePose);
     return Optional.of(fieldRelativeNotePose);
   }
 
-  public Pose2d getLastSeenObjectPose(){
-    visionField.getObject("coral").setPose(lastSeenObjectPose);
+  public Optional<Pose2d> getLastSeenObjectPose(){
+    if(lastSeenObjectPose.isPresent()){
+      visionField.getObject("coral").setPose(lastSeenObjectPose.get());
+    }
     return lastSeenObjectPose;
   }
 
-  public double getLastSeenTimestamp(){
-    return lastSeenTimestamp;
+  public void clearLastSeenObjectPose(){
+    lastSeenObjectPose = Optional.empty();
   }
 }

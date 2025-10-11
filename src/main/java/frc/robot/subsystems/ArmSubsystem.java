@@ -322,6 +322,11 @@ public class ArmSubsystem extends SubsystemBase {
   public boolean getOnTarget(double position){
     return MathUtil.isNear(position, getAngle(), 4);
   }
+  
+  public boolean getOnTarget(double position, double tolerance){
+    SmartDashboard.putBoolean("Arm/isTolerance", MathUtil.isNear(position, getAngle(), tolerance));
+    return MathUtil.isNear(position, getAngle(), tolerance);
+  }
 
   public boolean getArmIsSafe(){
     return getAngle()>ArmConstants.lowestAtZeroElevator;

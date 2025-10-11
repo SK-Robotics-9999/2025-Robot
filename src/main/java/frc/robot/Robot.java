@@ -81,6 +81,7 @@ public class Robot extends TimedRobot {
     // this line or comment it out.
     m_robotContainer.enableTeleopDriving();
     m_robotContainer.swerveSubsystem.setMaxPIDSpeed(SwerveSubsystem.MAXVELOCITYFORPID);
+    m_robotContainer.swerveSubsystem.setMaxPIDOmega(SwerveSubsystem.MAXOMEGA);
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
