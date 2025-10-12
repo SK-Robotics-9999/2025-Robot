@@ -218,8 +218,23 @@ public class VisionSubsystem extends SubsystemBase {
     PhotonPipelineResult result = results.get(results.size()-1);
     
     if(!result.hasTargets()){return Optional.empty();}
-
     PhotonTrackedTarget target = result.getBestTarget();
+
+    //id 1 is coral, id 0 is algae
+    for(PhotonTrackedTarget algaeOrCoral : result.getTargets()){
+      if(algaeOrCoral.getDetectedObjectClassID()!=1){
+        continue;
+      }
+      else{
+        target = algaeOrCoral;
+        break;
+      }
+    }
+
+    if (target.getDetectedObjectClassID()!=1){
+      return Optional.empty();
+    }
+
 
     double pitch = -Math.toRadians(target.getPitch()); // in radians, need to check this
     // SmartDashboard.putNumber("vision/object/pitch", pitch);
@@ -259,6 +274,11 @@ public class VisionSubsystem extends SubsystemBase {
     
     //technically off by 16 inches, but whatever.  
     Pose2d fieldRelativeNotePose = robotPose.plus(new Transform2d(ojbectIntakeRelative, ojbectIntakeRelative.getAngle()));
+    double x = fieldRelativeNotePose.getX();
+    double y = fieldRelativeNotePose.getY();
+
+    if((x<2.0||x>17.55-2.0)&&y>1.85&&y<2*4.026-1.85){return Optional.empty();}
+
     lastSeenObjectPose = Optional.of(fieldRelativeNotePose);
     return Optional.of(fieldRelativeNotePose);
   }

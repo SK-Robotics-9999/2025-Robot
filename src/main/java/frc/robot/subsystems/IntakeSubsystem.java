@@ -38,6 +38,8 @@ public class IntakeSubsystem extends SubsystemBase {
   private final double absConversionFactor = (18.0/40.0) * 360.0;
   
   private boolean intaking = false;
+  private boolean applyOffset = false;
+  private double offset = 0.0;
 
   public double pidTargetIntake = 155.0; // close to absConversionFactor
   public double pidTargetSafe = pidTargetIntake-11.0; //out of reach from pickup
@@ -47,7 +49,8 @@ public class IntakeSubsystem extends SubsystemBase {
     IDLE,
     INTAKE,
     POST_INTAKE,
-    EJECT
+    EJECT,
+    TRUE_HOME
   }
 
   public enum SystemState{
@@ -55,7 +58,8 @@ public class IntakeSubsystem extends SubsystemBase {
     IDLING,
     INTAKING,
     POST_INTAKING,
-    EJECTING
+    EJECTING,
+    TRUE_HOMING
   }
 
   private WantedState wantedState = WantedState.HOME;
@@ -90,6 +94,8 @@ public class IntakeSubsystem extends SubsystemBase {
         return SystemState.POST_INTAKING;
       case EJECT:
         return SystemState.EJECTING;
+      case TRUE_HOME:
+        return SystemState.TRUE_HOMING;
     }
     return SystemState.IDLING;
   }
@@ -109,24 +115,30 @@ public class IntakeSubsystem extends SubsystemBase {
         break;
       case POST_INTAKING:
         PidToSafe();
-        stopPassthrough();
+        holdPassthrough();
         break;
       case EJECTING:
         intaking = false;
         ejectStuff();
         stopPassthrough();
+        pivotMotor.setVoltage(-1.5);
         break;
+      case TRUE_HOMING:
+        stopPassthrough();
+        pivotMotor.setVoltage(-1.2);
     }
   }
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
     // SmartDashboard.putNumber("/intake/pivotMotorABS", pivotMotor.getAbsoluteEncoder().getPosition());
+    // SmartDashboard.putNumber("/intake/pivotMotorOFFSET", pivotMotor.getAbsoluteEncoder().getPosition()+offset);
     // SmartDashboard.putNumber("/intake/pivotMotor", getAngle());
     // SmartDashboard.putBoolean("/intake/intaking", getIsIntaking());
-    SmartDashboard.putNumber("/intake/current", pivotMotor.getOutputCurrent());
+    // SmartDashboard.putNumber("/intake/current", pivotMotor.getOutputCurrent());
     SmartDashboard.putBoolean("/intake/beambreak", !beambreak.get());
     // SmartDashboard.putBoolean("/intake/intaking", intaking);
+    // SmartDashboard.putNumber("/intake/pivotVelocity", pivotMotor.getAbsoluteEncoder().getVelocity());
     // SmartDashboard.putNumber("/intake/passthroughVelocity", passthroughLeft.getEncoder().getVelocity());
 
     systemState = handleStateTransitions();
@@ -203,11 +215,16 @@ public class IntakeSubsystem extends SubsystemBase {
 
   // pid to 157
   public void PidToZero(){
+    double target = pidTargetIntake;
+      // if(applyOffset){
+      //   target = pidTargetIntake+offset;
+      //   target %= 162.0;
+      // }
     stopRollers();
     if(pivotMotor.getAbsoluteEncoder().getPosition()<140){
       pivotMotor.getClosedLoopController()
         .setReference(
-          pidTargetIntake,
+          target,
           ControlType.kPosition,
           ClosedLoopSlot.kSlot0
         );
@@ -216,7 +233,7 @@ public class IntakeSubsystem extends SubsystemBase {
     else{
       pivotMotor.getClosedLoopController()
         .setReference(
-          pidTargetIntake,
+          target,
           ControlType.kPosition,
           ClosedLoopSlot.kSlot1
         );
@@ -224,11 +241,17 @@ public class IntakeSubsystem extends SubsystemBase {
     }
     }
     public void PidToSafe(){
+      double target = pidTargetSafe;
+      // if(applyOffset){
+      //   target = pidTargetSafe+offset;
+      //   target %= 162.0;
+      // }
       stopRollers();
+      //TODO: apply offset to the if statement
       if(pivotMotor.getAbsoluteEncoder().getPosition()<135){
         pivotMotor.getClosedLoopController()
           .setReference(
-            pidTargetSafe,
+            target,
             ControlType.kPosition,
             ClosedLoopSlot.kSlot0
           );
@@ -237,7 +260,7 @@ public class IntakeSubsystem extends SubsystemBase {
       else{
         pivotMotor.getClosedLoopController()
           .setReference(
-            pidTargetSafe,
+            target,
             ControlType.kPosition,
             ClosedLoopSlot.kSlot1
           );
@@ -265,7 +288,7 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public void rollStuff(){
-    rollerMotor.setVoltage(-8.5);
+    rollerMotor.setVoltage(-12.0);
   }
   
   public void stopRollers(){
@@ -283,6 +306,11 @@ public class IntakeSubsystem extends SubsystemBase {
 
   }
 
+  public void holdPassthrough(){
+    passthroughLeft.setVoltage(0.8);
+    passthroughRight.setVoltage(-0.8);
+  }
+
   public void SetWantedState(WantedState wantedState){
     this.wantedState = wantedState;
   }
@@ -291,13 +319,27 @@ public class IntakeSubsystem extends SubsystemBase {
     return !beambreak.get();
   }
 
-  public void zeroIntake(){
-    pidTargetIntake = pivotMotor.getAbsoluteEncoder().getPosition()-7.0; //cant use getAngle method, i messed it up
-    pidTargetIntake%=162;
-    pidTargetSafe = pidTargetIntake-11.0; //cant use getAngle method, i messed it up
-    pidTargetSafe%=162;
-
+  public Trigger getBeamBreakTrigger(){
+    return new Trigger(()->hasCoral()).debounce(0.1);
   }
 
+  // public void zeroIntake(){
+  //   pidTargetIntake = pivotMotor.getAbsoluteEncoder().getPosition()-7.0; //cant use getAngle method, i messed it up
+  //   pidTargetIntake%=162;
+  //   pidTargetSafe = pidTargetIntake-11.0; //cant use getAngle method, i messed it up
+  //   pidTargetSafe%=162;
+
+  // }
+
+  // public boolean intakeSlowedDown(){
+  //   return Math.abs(pivotMotor.getAbsoluteEncoder().getVelocity())<0.1;
+  // }
+
+  // public void zeroOnDown(){
+  //   applyOffset = true;
+  //   double current = pivotMotor.getAbsoluteEncoder().getPosition();
+  //   double desired = 95.3;
+  //   offset = current-desired;
+  // }
 
 }

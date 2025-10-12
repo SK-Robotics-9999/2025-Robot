@@ -82,7 +82,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   private final PIDController thetaCont = new PIDController(5.0, 0, 0);
 
-  private double staticFrictionConstant = 0.01;
+  private double staticFrictionConstant = 0.02;
 
   DoubleSupplier translationX = ()->0.0;
   DoubleSupplier translationY = ()->0.0;
@@ -135,6 +135,8 @@ public class SwerveSubsystem extends SubsystemBase {
     // SmartDashboard.putBoolean("swerve/isTooClose", FieldNavigation.getTooCloseToTag(getPose()));
     systemState = handleStateTransitions();
     ApplyStates();
+
+    SmartDashboard.putString("swerve/currentState", systemState.toString());
 
   }
 
@@ -375,7 +377,7 @@ public class SwerveSubsystem extends SubsystemBase {
   public boolean getOnTarget(){
     Transform2d delta = targetPose.minus(getPose());
     
-    return delta.getTranslation().getNorm()<Inches.of(1.0).in(Meters) 
+    return delta.getTranslation().getNorm()<Inches.of(1.5).in(Meters) 
     && delta.getRotation().getDegrees()<3.0
     && systemState==SystemState.DRIVING_TO_POINT
     && getVelocity()<Inches.of(3.0).in(Meters);
@@ -419,11 +421,11 @@ public class SwerveSubsystem extends SubsystemBase {
   public boolean getCloseEnough(){
     Transform2d delta = targetPose.minus(getPose());
 
-    return delta.getTranslation().getNorm()<Inches.of(4.0).in(Meters) 
+    return delta.getTranslation().getNorm()<Inches.of(6.0).in(Meters) 
     && delta.getRotation().getDegrees()<10.0
-    && swerveDrive.getFieldVelocity().omegaRadiansPerSecond<0.3
+    && swerveDrive.getFieldVelocity().omegaRadiansPerSecond<0.5
     && systemState==SystemState.DRIVING_TO_POINT
-    && getVelocity()<0.4;
+    && getVelocity()<0.6;
     
   }
   

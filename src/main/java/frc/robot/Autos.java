@@ -29,6 +29,7 @@ import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
+import frc.robot.Constants.ArmConstants;
 import frc.robot.Constants.ElevatorConstants;
 import frc.robot.subsystems.ArmSubsystem;
 import frc.robot.subsystems.ElevatorSubsystem;
@@ -215,7 +216,7 @@ public Command getBackupSequence(Supplier<Pose2d> backupPose){
 
 public Command getIntakeSequence(Supplier<Pose2d> intakePose, Supplier<Rotation2d> panRotation){
   return new SequentialCommandGroup(
-    new InstantCommand(()->swerveSubsystem.setMaxPIDSpeed(1.5)),
+    new InstantCommand(()->swerveSubsystem.setMaxPIDSpeed(3.0)),
 
     new SequentialCommandGroup(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
@@ -253,7 +254,7 @@ public Command getIntakeSequence(Supplier<Pose2d> intakePose, Supplier<Rotation2
       )
     )
     .withTimeout(5.0)
-    .until(()->FieldNavigation.getTooCloseToSource(swerveSubsystem.getPose()) || intakeSubsystem.hasCoral()),
+    .until(()->FieldNavigation.getTooCloseToSource(swerveSubsystem.getPose()) || intakeSubsystem.getBeamBreakTrigger().getAsBoolean()),
     new InstantCommand(()->{
       swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.STOP);
       swerveSubsystem.setMaxPIDSpeed(SwerveSubsystem.MAXVELOCITYFORPID);
@@ -268,7 +269,7 @@ public Command getPlaceSequence(Supplier<Pose2d> offsetPose, Supplier <Pose2d> s
   return new ParallelCommandGroup(
     new SequentialCommandGroup(
       new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, offsetPose.get()), swerveSubsystem),
-      waitUntil(swerveSubsystem::getCloseEnough, ()->superStructure.getCurrentSuperState()==CurrentSuperState.MOVE_TO_L4, armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget).withTimeout(3.0),
+      waitUntil(swerveSubsystem::getCloseEnough, ()->superStructure.getCurrentSuperState()==CurrentSuperState.MOVE_TO_L4, ()->armSubsystem.getOnTarget(ArmConstants.moveL4, 30), ()->elevatorSubsystem.getOnTarget(ElevatorConstants.moveL4,5)).withTimeout(3.0),
       new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, scoringPose.get()), swerveSubsystem),
       waitUntil(swerveSubsystem::getOnScoringPose)
     ),
@@ -337,6 +338,7 @@ public Command getStartAuto(Supplier<Pose2d> offsetPose, Supplier<Pose2d> scoreP
       new InstantCommand(()->System.out.println("L4RightAutoLong")),
       getStartAuto(()->FieldNavigation.getOffsetCoralTag(false, 22, 9), ()->FieldNavigation.getCoralTag(false, 22, 9)),
       getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(90)), ()->FieldNavigation.getOffsetCoralTag(false, 17, 8), ()->FieldNavigation.getCoralTag(false, 17, 8)),
+      getCycleSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(-60)),()->FieldNavigation.getOffsetCoralTag(true, 17, 8), ()->FieldNavigation.getCoralTag(true, 17, 8)),
       getCycleSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(-60)),()->FieldNavigation.getOffsetCoralTag(true, 17, 8), ()->FieldNavigation.getCoralTag(true, 17, 8))
     );
   }
@@ -346,7 +348,8 @@ public Command getStartAuto(Supplier<Pose2d> offsetPose, Supplier<Pose2d> scoreP
       new InstantCommand(()->System.out.println("L4LeftAutoLong")),
       getStartAuto(()->FieldNavigation.getOffsetCoralTag(true, 20, 11), ()->FieldNavigation.getCoralTag(true, 20, 11)),
       getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(-90)), ()->FieldNavigation.getOffsetCoralTag(true, 19, 6), ()->FieldNavigation.getCoralTag(true, 19, 6)),
-      getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(60)), ()->FieldNavigation.getOffsetCoralTag(false, 19, 6), ()->FieldNavigation.getCoralTag(false, 19, 6))
+      getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(60)), ()->FieldNavigation.getOffsetCoralTag(false, 19, 6), ()->FieldNavigation.getCoralTag(false, 19, 6)),
+      getCycleSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(-60)),()->FieldNavigation.getOffsetCoralTag(true, 17, 8), ()->FieldNavigation.getCoralTag(true, 17, 8))
     );
   }
 

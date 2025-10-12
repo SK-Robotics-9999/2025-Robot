@@ -319,7 +319,7 @@ public class SuperStructure extends SubsystemBase {
     if (!armNeedsToWait){
       armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.intakeAngle);
     }
-    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.POST_INTAKE);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 

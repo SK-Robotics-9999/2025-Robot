@@ -258,6 +258,15 @@ public class FieldNavigation {
         return tooCloseX && tooCloseY;
     }
 
+    public static Pose2d getBargeScorePose(Pose2d currentPose){
+        Pose2d scorePose = new Pose2d(7.9, currentPose.getY(), new Rotation2d(Math.toDegrees(0)));
+        if(isRed.getAsBoolean()){
+            scorePose = new Pose2d(17.55-7.9, currentPose.getY(), new Rotation2d(Math.toDegrees(180)));
+        }
+        
+        return scorePose;
+    }
+
     //circle radius (simplification) with center at reef-center
     public static boolean getCrashIntoReef(Pose2d currentPose){
         Pose2d closestReefCenter = currentPose.nearest(reefCenter);
