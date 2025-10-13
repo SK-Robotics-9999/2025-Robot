@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.ParallelCommandGroup;
 import edu.wpi.first.wpilibj2.command.ParallelRaceGroup;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.StartEndCommand;
@@ -34,6 +35,7 @@ import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.LEDSubsystem;
 import frc.robot.subsystems.SuctionSubsystem;
 import frc.robot.subsystems.SuperStructure;
+import frc.robot.subsystems.SuperStructure.CurrentSuperState;
 import frc.robot.subsystems.SuperStructure.WantedSuperState;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.VisionSubsystem;
@@ -59,7 +61,7 @@ public class RobotContainer {
   private boolean hasCoral=false;//TODO: technically true at the start of auto, will fix after
 
   private boolean coralMode=true;
-  public boolean automationEnabled=true;
+  // public boolean automationEnabled=true;
 
   // The robot's subsystems and commands are defined here...
   SwerveSubsystem swerveSubsystem = new SwerveSubsystem();
@@ -143,7 +145,11 @@ public class RobotContainer {
         waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())).withTimeout(2),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
         waitUntil(intakeSubsystem.getBeamBreakTrigger(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_INTAKE),superStructure)
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
+        waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
+        waitUntil(suctionSubsystem::getCoralSuctionGood).withTimeout(2.0),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure)
       ),
       pulloutAlgae(),
       ()->coralMode
@@ -264,7 +270,7 @@ public class RobotContainer {
             new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE), superStructure)
           ),
           new RunCommand(()->{}),
-          ()->automationEnabled && !coralMode
+          ()->!coralMode
         )
       )
       .until(()->!superStructure.getIsAtReefState() && FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
@@ -283,9 +289,9 @@ public class RobotContainer {
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.EJECT))
     );
 
-    driver.povLeft().onTrue(
-      new InstantCommand(()->automationEnabled=!automationEnabled)
-    );
+    // driver.povLeft().onTrue(
+    //   new InstantCommand(()->automationEnabled=!automationEnabled)
+    // );
 
     // vitaliy.start().whileTrue(
     //   new SequentialCommandGroup(
@@ -300,10 +306,26 @@ public class RobotContainer {
 
   public Command pickupCoralSequence(){
     return new SequentialCommandGroup(
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
-      waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
-      waitUntil(elevatorSubsystem::getOnTarget, suctionSubsystem::getCoralSuctionGood),
+      new ConditionalCommand(
+        new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
+        waitUntil(armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
+        waitUntil(suctionSubsystem::getCoralSuctionGood).withTimeout(2.0),
+        new RepeatCommand(
+          new SequentialCommandGroup(
+            new InstantCommand(()->suctionSubsystem.SetWantedState(frc.robot.subsystems.SuctionSubsystem.WantedState.RELEASE)),
+            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_RECEIVE),superStructure),
+            new WaitCommand(0.2),
+            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_RECEIVE),superStructure),
+            waitUntil(suctionSubsystem::getCoralSuctionGood).withTimeout(2.0)
+          )
+        )
+      )
+      .until(suctionSubsystem::getCoralSuctionGood),
+      new InstantCommand(),
+      ()->superStructure.getCurrentSuperState()==CurrentSuperState.PREPARE_TO_PLACE
+      ),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
       waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
       new InstantCommand(()->hasCoral=true)
@@ -326,17 +348,11 @@ public class RobotContainer {
   public Command moveAndPlace(WantedSuperState moveTo, WantedSuperState placeAt){
     return new SequentialCommandGroup(
       new InstantCommand(()->superStructure.SetWantedState(moveTo),superStructure),
-      new ConditionalCommand(
-        new SequentialCommandGroup(
-          waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget, swerveSubsystem::getOnScoringPose),
-          new InstantCommand(()->superStructure.SetWantedState(placeAt),superStructure),
-          waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget).withTimeout(0.5),
-          new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.RED_ORANGE, 2)),
-          new InstantCommand(()->hasCoral=false)
-        ),
-        new InstantCommand(),
-        ()->automationEnabled
-      )
+      waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget, swerveSubsystem::getOnScoringPose),
+      new InstantCommand(()->superStructure.SetWantedState(placeAt),superStructure),
+      waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget).withTimeout(0.5),
+      new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.RED_ORANGE, 2)),
+      new InstantCommand(()->hasCoral=false)
     );
   }
 
@@ -358,7 +374,7 @@ public class RobotContainer {
     return coralMode;
   }
 
-  public boolean getAutomationEnabled(){
-    return automationEnabled;
-  }
+  // public boolean getAutomationEnabled(){
+  //   return automationEnabled;
+  // }
 }

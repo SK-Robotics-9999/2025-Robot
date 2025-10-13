@@ -277,7 +277,7 @@ public class VisionSubsystem extends SubsystemBase {
     double x = fieldRelativeNotePose.getX();
     double y = fieldRelativeNotePose.getY();
 
-    if((x<2.0||x>17.55-2.0)&&y>1.85&&y<2*4.026-1.85){return Optional.empty();}
+    if((x<2.0||x>17.55-2.0)&&y>1.85&&y<2*4.026-1.85||y<0.0||y>2*4.026||x<0.0||x>17.55){return Optional.empty();}
 
     lastSeenObjectPose = Optional.of(fieldRelativeNotePose);
     return Optional.of(fieldRelativeNotePose);

@@ -46,7 +46,7 @@ public class Robot extends TimedRobot {
     CommandScheduler.getInstance().run();
 
     SmartDashboard.putBoolean("coralMode", m_robotContainer.getCoralMode());
-    SmartDashboard.putBoolean("automationEnabled", m_robotContainer.getAutomationEnabled());
+    // SmartDashboard.putBoolean("automationEnabled", m_robotContainer.getAutomationEnabled());
   }
 
   /** This function is called once each time the robot enters Disabled mode. */

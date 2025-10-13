@@ -179,6 +179,15 @@ public class FieldNavigation {
         }
         return tagPose.transformBy(coralApproachOffsetRight);
     }
+    
+    public static Pose2d getFunny(int blueTagID, int redTagID){
+        Pose2d tagPose = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(blueTagID).get().toPose2d();
+        if(isRed.getAsBoolean()){
+            tagPose = AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(redTagID).get().toPose2d();
+        }
+
+        return tagPose.transformBy(new Transform2d(pidApproachOffset, Inches.of(-6.5).in(Meters), new Rotation2d(Math.toRadians(-30))));
+    }
 
     public static Pose2d getCoralSource(Pose2d currentPose){
         var nearest = currentPose.nearest(tagsSource);
@@ -259,9 +268,9 @@ public class FieldNavigation {
     }
 
     public static Pose2d getBargeScorePose(Pose2d currentPose){
-        Pose2d scorePose = new Pose2d(7.9, currentPose.getY(), new Rotation2d(Math.toDegrees(0)));
+        Pose2d scorePose = new Pose2d(7.9, currentPose.getY(), new Rotation2d(Math.toRadians(0)));
         if(isRed.getAsBoolean()){
-            scorePose = new Pose2d(17.55-7.9, currentPose.getY(), new Rotation2d(Math.toDegrees(180)));
+            scorePose = new Pose2d(17.55-7.9, currentPose.getY(), new Rotation2d(Math.toRadians(180)));
         }
         
         return scorePose;

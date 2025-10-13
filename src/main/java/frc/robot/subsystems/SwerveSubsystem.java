@@ -11,6 +11,7 @@ import java.io.File;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
+import java.util.function.Supplier;
 
 import com.studica.frc.AHRS;
 
@@ -27,9 +28,12 @@ import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.RunCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.FieldNavigation;
 import swervelib.SwerveDrive;
@@ -44,7 +48,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   
   double maximumSpeed = 5.033;
-  public static final double MAXVELOCITYFORPID = 3.0; //meters
+  public static final double MAXVELOCITYFORPID = 4.0; //meters
   double maxVelocityForPID = MAXVELOCITYFORPID; //meters
   public static final double MAXOMEGA = 4.0; //radians per second
   double maxRotationalVelocityForPID = MAXOMEGA;
@@ -520,5 +524,35 @@ public class SwerveSubsystem extends SubsystemBase {
           ()->-driver.getLeftX(),
           ()->-driver.getRightX()
         ));
+  }
+
+  public Command waitUntil(BooleanSupplier... suppliers){
+    BooleanSupplier combined = ()->{
+      for (BooleanSupplier supplier : suppliers){
+        if (!supplier.getAsBoolean()){
+          return false;
+        }
+      }
+      return true;
+    };
+
+    return new WaitCommand(0.05).andThen(new RunCommand(()->{}).until(combined));
+  }
+
+
+  public Command getToScoringPose(Supplier<Pose2d> offsetPose, Supplier<Pose2d> scoringPose, BooleanSupplier... pauses){
+    return new SequentialCommandGroup(
+      new ConditionalCommand(
+        new InstantCommand(()->SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, offsetPose.get()), this)
+        .andThen(waitUntil(pauses)
+          .withTimeout(3.0)),
+        new InstantCommand(),
+        ()->{
+          Pose2d delta = scoringPose.get().relativeTo(getPose());
+          return Math.abs(delta.getRotation().getDegrees())<20.0  && Math.abs(delta.getTranslation().getAngle().getDegrees())<30.0;
+        }
+      ),
+      new InstantCommand(()->SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, scoringPose.get()), this)
+    );
   }
 }

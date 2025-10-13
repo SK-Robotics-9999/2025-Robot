@@ -333,14 +333,14 @@ public class SuperStructure extends SubsystemBase {
   private void moveToL4(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL4);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL4);
-    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void moveToL3(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL3);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL3);
-    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
@@ -350,21 +350,21 @@ public class SuperStructure extends SubsystemBase {
     if(armSubsystem.getAngle()>ArmConstants.safeL2){
       elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL2);
     }
-    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void moveToL1(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL1);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL1);
-    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
 
   private void moveToBarge(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.barge);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.barge);
-    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
   }
 
@@ -444,7 +444,7 @@ public class SuperStructure extends SubsystemBase {
 
   private void startAuto(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.HOME);
-    armSubsystem.SetWantedState(ArmSubsystem.WantedState.HOME);
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.BRAKE);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }

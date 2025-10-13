@@ -159,7 +159,7 @@ public class IntakeSubsystem extends SubsystemBase {
     SparkBaseConfig pivotConf = new SparkMaxConfig()
       .inverted(true)
       .smartCurrentLimit(80)
-      .closedLoopRampRate(0.2)
+      .closedLoopRampRate(0.5)
       .idleMode(IdleMode.kBrake)
     ;
 
@@ -241,30 +241,43 @@ public class IntakeSubsystem extends SubsystemBase {
     }
     }
     public void PidToSafe(){
-      double target = pidTargetSafe;
+      // double target = pidTargetSafe;
       // if(applyOffset){
       //   target = pidTargetSafe+offset;
       //   target %= 162.0;
       // }
       stopRollers();
       //TODO: apply offset to the if statement
-      if(pivotMotor.getAbsoluteEncoder().getPosition()<135){
-        pivotMotor.getClosedLoopController()
-          .setReference(
-            target,
-            ControlType.kPosition,
-            ClosedLoopSlot.kSlot0
-          );
+      // if(pivotMotor.getAbsoluteEncoder().getPosition()<135){
+      //   pivotMotor.getClosedLoopController()
+      //     .setReference(
+      //       target,
+      //       ControlType.kPosition,
+      //       ClosedLoopSlot.kSlot0
+      //     );
           
+      // }
+      // else{
+      //   pivotMotor.getClosedLoopController()
+      //     .setReference(
+      //       target,
+      //       ControlType.kPosition,
+      //       ClosedLoopSlot.kSlot1
+      //     );
+  
+      // }
+
+      if(pivotMotor.getAbsoluteEncoder().getPosition()>120.0){
+        pivotMotor.setVoltage(-1.5);
+        // stopRollers();
+        // rollStuff();
+        // stopPassthrough();
+        // passStuff();
       }
       else{
-        pivotMotor.getClosedLoopController()
-          .setReference(
-            target,
-            ControlType.kPosition,
-            ClosedLoopSlot.kSlot1
-          );
-  
+        pivotMotor.setVoltage(-0.5);
+        // rollStuff();
+        // passStuff();
       }
       }
 
@@ -273,10 +286,11 @@ public class IntakeSubsystem extends SubsystemBase {
       pivotMotor.setVoltage(-1.5);
       // stopRollers();
       rollStuff();
-      stopPassthrough();
+      // stopPassthrough();
+      passStuff();
     }
     else{
-      pivotMotor.setVoltage(0);
+      pivotMotor.setVoltage(-0.5);
       rollStuff();
       passStuff();
     }
@@ -320,7 +334,7 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public Trigger getBeamBreakTrigger(){
-    return new Trigger(()->hasCoral()).debounce(0.1);
+    return new Trigger(()->hasCoral()).debounce(0.05);
   }
 
   // public void zeroIntake(){

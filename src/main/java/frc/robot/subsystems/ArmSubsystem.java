@@ -57,7 +57,7 @@ public class ArmSubsystem extends SubsystemBase {
   private double targetAngle = 90.0;
 
   private final double maxVelocity = 450.0; //degrees per second, i hope
-  private final double maxAccel = 1300.0; //already maxes out, beyond maxing out, cant exactly follow profile, but pushes it to be faster
+  private final double maxAccel = 1000.0; //already maxes out, beyond maxing out, cant exactly follow profile, but pushes it to be faster
   private final double maxAlgaeAccel = 375.0;
   private final TrapezoidProfile trapProfile = new TrapezoidProfile(
     new TrapezoidProfile.Constraints(maxVelocity, maxAccel)
@@ -67,6 +67,8 @@ public class ArmSubsystem extends SubsystemBase {
   );
 
   BooleanSupplier isAlgae = ()->false;
+
+  private boolean holdArm = false;
 
   ArmFeedforward armFF = new ArmFeedforward(0.03, 0.12, 0.0264);//i have no idea if the kv is good, but hope it works...
 
@@ -85,13 +87,15 @@ public class ArmSubsystem extends SubsystemBase {
   public enum WantedState{
     HOME,
     IDLE,
-    MOVE_TO_POSITION
+    MOVE_TO_POSITION,
+    BRAKE
   }
 
   public enum SystemState{
     HOMING,
     IDLING,
-    MOVING_TO_POSITION
+    MOVING_TO_POSITION,
+    BRAKING
   }
 
   private WantedState wantedState = WantedState.IDLE;
@@ -134,7 +138,9 @@ public class ArmSubsystem extends SubsystemBase {
     ApplyStates();
     previousWantedState = this.wantedState;
 
-    setArmAngleTrap();
+    if(!holdArm){
+      setArmAngleTrap();
+    }
   }
 
   public SystemState handleStateTransitions(){
@@ -148,11 +154,14 @@ public class ArmSubsystem extends SubsystemBase {
         return SystemState.IDLING;
       case MOVE_TO_POSITION:
         return SystemState.MOVING_TO_POSITION;
+      case BRAKE:
+        return SystemState.BRAKING;
     }
     return SystemState.IDLING;
   }
 
   public void ApplyStates(){
+    holdArm = false;
     switch (systemState) {
       case HOMING:
         targetAngle = 90.0;        
@@ -170,6 +179,10 @@ public class ArmSubsystem extends SubsystemBase {
           trapGoal.position = targetAngle;
         }  
         break;
+      case BRAKING:
+        holdArm = true;
+        break;
+
     }
   }
 
