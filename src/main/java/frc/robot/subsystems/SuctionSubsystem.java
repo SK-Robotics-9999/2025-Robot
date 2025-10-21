@@ -26,7 +26,7 @@
 
         SparkFlex suctionMotor = new SparkFlex(MotorConstants.kSuctionID, MotorType.kBrushless);
 
-        private final double targetPressureCoral = 40.0;
+        private final double targetPressureCoral = 50.0;
         private final double targetPressureAlgae = 60.0;
 
         PIDController pid = new PIDController(12.0/10.0, 0, 0);
@@ -157,18 +157,22 @@
 
         //for coral
         public boolean getCoralSuctionGood(){
-            return getPressure()>35.0;
+            return getPressure()>30.0;
         }
 
         //Is it more than the minimum that a no-seal could get?
         public boolean getCoralSuctionApplied(){
-            return getPressure()>15.0;
+            return getPressure()>20.0;
         }
-
+        
+        
         public boolean getAlgaeSuctionGood(){
-            return getPressure()>35.0; //should probably be higher
+            return getPressure()>45.0; //should probably be higher
         }
-
+        
+        public boolean getAlgaeSuctionApplied(){
+            return getPressure()>40.0;
+        }
 
 
         public void SetWantedState(WantedState wantedState){

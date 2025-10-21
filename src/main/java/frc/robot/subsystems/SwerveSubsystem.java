@@ -81,16 +81,16 @@ public class SwerveSubsystem extends SubsystemBase {
   private boolean assisterIsRobotRelative=false;
 
 
-  private final PIDController autoCont = new PIDController(5, 0, 0.1);
-  private final PIDController teleOpCont = new PIDController(5, 0, 0.1);
+  private final PIDController autoCont = new PIDController(3.0, 0, 0.3);
+  private final PIDController teleOpCont = new PIDController(3.0, 0, 0.3);
 
-  private final PIDController thetaCont = new PIDController(5.0, 0, 0);
+  private final PIDController thetaCont = new PIDController(4.0, 0, 0);
 
-  private double staticFrictionConstant = 0.02;
+  private double staticFrictionConstant = 0.03;
 
   DoubleSupplier translationX = ()->0.0;
   DoubleSupplier translationY = ()->0.0;
-  DoubleSupplier angularRotationX = ()->0.0;
+  DoubleSupplier angularRotationX = ()->0.0;  
 
   //2.24-1.88
   public static final SimpleMotorFeedforward feedforward = new SimpleMotorFeedforward(0.1, 2.75, 0.35);
@@ -307,7 +307,7 @@ public class SwerveSubsystem extends SubsystemBase {
     var delta = pose.relativeTo(getPose());
     var linearDistance = delta.getTranslation().getNorm();
 
-    if(linearDistance > Inches.of(1.0).in(Meters)){
+    if(linearDistance > Inches.of(0.5).in(Meters)){
       frictionConstant = staticFrictionConstant*maximumSpeed;
     }
 
@@ -382,9 +382,9 @@ public class SwerveSubsystem extends SubsystemBase {
     Transform2d delta = targetPose.minus(getPose());
     
     return delta.getTranslation().getNorm()<Inches.of(1.5).in(Meters) 
-    && delta.getRotation().getDegrees()<3.0
+    && delta.getRotation().getDegrees()<5.0
     && systemState==SystemState.DRIVING_TO_POINT
-    && getVelocity()<Inches.of(3.0).in(Meters);
+    && getVelocity()<Inches.of(6.0).in(Meters);
   }
   
   /**
@@ -413,8 +413,6 @@ public class SwerveSubsystem extends SubsystemBase {
   
   // I lowkey don't know if the edge cases will destroy this.
   public boolean getOnScoringPose(){
-    Transform2d delta = targetPose.minus(getPose());
-    
     Transform2d tagToTarget = targetPose.minus(FieldNavigation.getNearestReef(getPose()));
     
     return this.getOnTarget()
@@ -459,9 +457,9 @@ public class SwerveSubsystem extends SubsystemBase {
     this.maxRotationalVelocityForPID = max;
   }
   
-  public Command pidToPoseCommand(Pose2d pose){
-    return new InstantCommand(()->SetWantedState(WantedState.DRIVE_TO_POINT, pose),  this);
-  }
+  // public Command pidToPoseCommand(Pose2d pose){
+  //   return new InstantCommand(()->SetWantedState(WantedState.DRIVE_TO_POINT, pose),  this);
+  // }
 
   public Command driveAwayFromReef(CommandXboxController driver){
     return new RunCommand(()->setWantedState(

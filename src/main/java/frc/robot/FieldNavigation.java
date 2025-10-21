@@ -268,9 +268,9 @@ public class FieldNavigation {
     }
 
     public static Pose2d getBargeScorePose(Pose2d currentPose){
-        Pose2d scorePose = new Pose2d(7.9, currentPose.getY(), new Rotation2d(Math.toRadians(0)));
+        Pose2d scorePose = new Pose2d(8.0, currentPose.getY(), new Rotation2d(Math.toRadians(0)));
         if(isRed.getAsBoolean()){
-            scorePose = new Pose2d(17.55-7.9, currentPose.getY(), new Rotation2d(Math.toRadians(180)));
+            scorePose = new Pose2d(17.55-8.0, currentPose.getY(), new Rotation2d(Math.toRadians(180)));
         }
         
         return scorePose;

@@ -46,6 +46,8 @@ public class Robot extends TimedRobot {
     CommandScheduler.getInstance().run();
 
     SmartDashboard.putBoolean("coralMode", m_robotContainer.getCoralMode());
+    SmartDashboard.putBoolean("holdingCoral", m_robotContainer.hasCoral);
+    SmartDashboard.putBoolean("holdingAlgae", m_robotContainer.hasAlgae);
     // SmartDashboard.putBoolean("automationEnabled", m_robotContainer.getAutomationEnabled());
   }
 

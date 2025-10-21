@@ -208,90 +208,55 @@ public class Autos {
 public Command getBackupSequence(Supplier<Pose2d> backupPose){
   return new SequentialCommandGroup(
     new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, backupPose.get()), swerveSubsystem),
-    waitUntil(()->swerveSubsystem.getOnTarget(backupPose.get(), Inches.of(8).in(Meters), 5.0, 2.0))
+    waitUntil(()->swerveSubsystem.getOnTarget(backupPose.get(), Inches.of(24).in(Meters), 45.0, 4.0))
   )
-  .until(()->visionSubsystem.getObjectFieldRelativePose(swerveSubsystem.getPose()).isPresent())
   .withTimeout(1.0)
   ;
 }
 
-public Command getIntakeSequence(Supplier<Pose2d> intakePose, Supplier<Rotation2d> panRotation){
+public Command getIntakeSequence(Supplier<Pose2d> intakePose){
   return new SequentialCommandGroup(
-    new InstantCommand(()->swerveSubsystem.setMaxPIDSpeed(5.0)),
-
-    new SequentialCommandGroup(
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
-      waitUntil(()->visionSubsystem.getObjectFieldRelativePose(swerveSubsystem.getPose()).isPresent()).withTimeout(0.5),
-
-      //if we saw a coral, then we dont do anything and skip. if we didnt see a coral, then we pan slowly.
-      new InstantCommand(()->{
-        if(visionSubsystem.getLastSeenObjectPose().isEmpty()){
-          swerveSubsystem.setMaxPIDOmega(Math.PI/3.0);
-          swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, swerveSubsystem.getPose().transformBy(new Transform2d(new Translation2d(), panRotation.get())));
-        }
-      }),
-      new RunCommand(()->visionSubsystem.getObjectFieldRelativePose(swerveSubsystem.getPose()))
-      .until(()->visionSubsystem.getLastSeenObjectPose().isPresent())
-      .withTimeout(2.0),
-
-      new InstantCommand(()->swerveSubsystem.setMaxPIDOmega(SwerveSubsystem.MAXOMEGA)),
-
-      //if weve seen one in the last 2 seconds, drive to that pose correctly. otherwise, drive to predefined pose and hope we get one
-      new ConditionalCommand(
-        new SequentialCommandGroup(
-          //Set a rotation target at the 30% mark
-          new InstantCommand(()->{
-            Pose2d interpolated = swerveSubsystem.getPose().interpolate(visionSubsystem.getLastSeenObjectPose().get(), 0.3);
-            swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, new Pose2d(interpolated.getX(), interpolated.getY(), visionSubsystem.getLastSeenObjectPose().get().getRotation()));
-          }),
-          waitUntil(()->swerveSubsystem.getOnTarget(Inches.of(8).in(Meters), 5, 2.0)),
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, visionSubsystem.getLastSeenObjectPose().get())),
-          // waitUntil(swerveSubsystem::getOnTarget, intakeSubsystem.getBeamBreakTrigger())
-          new RunCommand(()->{})
-        ),
-        //our "luck" pose if we never saw any coral
-        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, intakePose.get()))
-        .andThen(waitUntil(swerveSubsystem::getOnTarget))
-        .andThen(new WaitCommand(1.0)),
-        ()->visionSubsystem.getLastSeenObjectPose().isPresent()
-      )
-      .withTimeout(2.0)
-    )
-    .withTimeout(5.0)
-    .until(intakeSubsystem.getBeamBreakTrigger()),
-    new InstantCommand(()->{
-      swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.STOP);
-      swerveSubsystem.setMaxPIDSpeed(SwerveSubsystem.MAXVELOCITYFORPID);
-      visionSubsystem.clearLastSeenObjectPose();
-    })
-  );
+    new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
+    new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, intakePose.get())),
+    waitUntil(swerveSubsystem::getOnTarget)
+  )
+  .withTimeout(5.0)
+  .until(intakeSubsystem.getBeamBreakTrigger())
+  ;
 }
 
-public Command getPlaceSequence(Supplier<Pose2d> offsetPose, Supplier <Pose2d> scoringPose){
+public Command getPlaceSequence(Supplier <Pose2d> scoringPose){
+  double waitForBeamBreak = 1.0; //seconds, how long we'll reintake if we still don't have anything
+  //parallel drive and superstructure
   return new ParallelCommandGroup(
     new SequentialCommandGroup(
-      new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, offsetPose.get()), swerveSubsystem),
-      waitUntil(swerveSubsystem::getCloseEnough, ()->superStructure.getCurrentSuperState()==CurrentSuperState.MOVE_TO_L4, ()->armSubsystem.getOnTarget(ArmConstants.moveL4, 30), ()->elevatorSubsystem.getOnTarget(ElevatorConstants.moveL4,5)).withTimeout(2.5),
+      //if we still don't have anything, we wait, syncing with the 
+      new ConditionalCommand(
+        new InstantCommand(), 
+        new WaitCommand(waitForBeamBreak), 
+        intakeSubsystem.getBeamBreakTrigger()
+      )
+      .until(intakeSubsystem.getBeamBreakTrigger()),
+
+      //drive to point if we have something, otherwise we just stop. we will backup pose to our reset
       new ConditionalCommand(
         new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, scoringPose.get()), swerveSubsystem)
-        .andThen(waitUntil(swerveSubsystem::getOnScoringPose).withTimeout(1.0)),
+        .andThen(waitUntil(swerveSubsystem::getOnScoringPose).withTimeout(3.0)),
         new InstantCommand(),
         intakeSubsystem.getBeamBreakTrigger()
       )
     ),
 
+
+    //keep on intaking if we don't have antything
     new SequentialCommandGroup(
       new ConditionalCommand(
         new InstantCommand(), 
-        new SequentialCommandGroup(
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_INTAKE)),
-          new WaitCommand(0.5),
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE))
-        ), 
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE), superStructure)
+        .andThen(new WaitCommand(waitForBeamBreak)),
         intakeSubsystem.getBeamBreakTrigger()
       )
-      .until(intakeSubsystem.getBeamBreakTrigger())
-      .withTimeout(1.5),
+      .until(intakeSubsystem.getBeamBreakTrigger()),
       new ConditionalCommand(
         robotContainer.pickupCoralSequence()
         .andThen(robotContainer.moveAndPlace(WantedSuperState.MOVE_TO_L4, WantedSuperState.PLACE_L4)),
@@ -304,25 +269,23 @@ public Command getPlaceSequence(Supplier<Pose2d> offsetPose, Supplier <Pose2d> s
   ;
 }
 
-public Command getCycleSequence(Supplier<Pose2d> backupPose, Supplier<Pose2d> intakePose, Supplier<Rotation2d> panRotation, Supplier<Pose2d> offsetPose, Supplier<Pose2d> scoringPose){
+public Command getCycleSequence(Supplier<Pose2d> backupPose, Supplier<Pose2d> intakePose, Supplier<Pose2d> scoringPose){
   // Supplier<Rotation2d> panRotation = ()->{
   //   double radiansRotation = Math.toRadians(0)
   // }
   return new SequentialCommandGroup(
     getBackupSequence(backupPose),
-    getIntakeSequence(intakePose, panRotation),
-    getPlaceSequence(offsetPose, scoringPose)
+    getIntakeSequence(intakePose),
+    getPlaceSequence(scoringPose)
   );
 }
 
-public Command getStartAuto(Supplier<Pose2d> offsetPose, Supplier<Pose2d> scorePose){
+public Command getStartAuto(Supplier<Pose2d> scorePose){
   return Commands.sequence(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
       waitUntil(suctionSubsystem::getCoralSuctionGood).withTimeout(1.5),
       new ParallelCommandGroup(
         new SequentialCommandGroup(
-          new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, offsetPose.get()), swerveSubsystem),
-          waitUntil(swerveSubsystem::getCloseEnough),
           new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, scorePose.get()), swerveSubsystem),
           waitUntil(swerveSubsystem::getOnTarget)
         ),
@@ -336,7 +299,7 @@ public Command getStartAuto(Supplier<Pose2d> offsetPose, Supplier<Pose2d> scoreP
   public Command L4RightAuto(){
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4LeftAuto")),
-      getStartAuto(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralRight(swerveSubsystem.getPose())),
+      getStartAuto(()->FieldNavigation.getCoralRight(swerveSubsystem.getPose())),
       new WaitCommand(1.5), //technically should be elevator on target, etc.
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME))
     );
@@ -346,7 +309,7 @@ public Command getStartAuto(Supplier<Pose2d> offsetPose, Supplier<Pose2d> scoreP
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4LeftAuto")),
       //the right to the vision of the apriltag is left when facing at the apriltag.
-      getStartAuto(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralLeft(swerveSubsystem.getPose())),
+      getStartAuto(()->FieldNavigation.getCoralLeft(swerveSubsystem.getPose())),
       new WaitCommand(1.5), //technically should be elevator on target, etc.
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME))
     );
@@ -356,20 +319,20 @@ public Command getStartAuto(Supplier<Pose2d> offsetPose, Supplier<Pose2d> scoreP
   public Command L4LongRightAuto(){
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4RightAutoLong")),
-      getStartAuto(()->FieldNavigation.getOffsetCoralTag(false, 22, 9), ()->FieldNavigation.getCoralTag(false, 22, 9)),
-      getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(90)), ()->FieldNavigation.getOffsetCoralTag(false, 17, 8), ()->FieldNavigation.getCoralTag(false, 17, 8)),
-      getCycleSequence(()->FieldNavigation.getFunny(17,8), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(30)),()->FieldNavigation.getOffsetCoralTag(true, 17, 8), ()->FieldNavigation.getCoralTag(true, 17, 8)),
-      getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(-30)),()->FieldNavigation.getOffsetCoralTag(true, 22, 9), ()->FieldNavigation.getCoralTag(true, 22, 9))
+      getStartAuto(()->FieldNavigation.getCoralTag(false, 22, 9)),
+      getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 17, 8)),
+      getCycleSequence(()->FieldNavigation.getFunny(17,8), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(true, 17, 8)),
+      getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(true, 22, 9))
     );
   }
 
   public Command L4LongLeftAuto(){
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4LeftAutoLong")),
-      getStartAuto(()->FieldNavigation.getOffsetCoralTag(true, 20, 11), ()->FieldNavigation.getCoralTag(true, 20, 11)),
-      getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(-90)), ()->FieldNavigation.getOffsetCoralTag(true, 19, 6), ()->FieldNavigation.getCoralTag(true, 19, 6)),
-      getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(60)), ()->FieldNavigation.getOffsetCoralTag(false, 19, 6), ()->FieldNavigation.getCoralTag(false, 19, 6)),
-      getCycleSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->new Rotation2d(Math.toRadians(-60)),()->FieldNavigation.getOffsetCoralTag(false, 20, 11), ()->FieldNavigation.getCoralTag(false, 20, 11))
+      getStartAuto(()->FieldNavigation.getCoralTag(true, 20, 11)),
+      getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(true, 19, 6)),
+      getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 19, 6)),
+      getCycleSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 20, 11))
     );
   }
 

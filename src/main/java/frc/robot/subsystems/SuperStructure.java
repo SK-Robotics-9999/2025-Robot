@@ -28,6 +28,7 @@ public class SuperStructure extends SubsystemBase {
     PREPARE_TO_INTAKE,
     PREPARE_TO_RECEIVE,
     CORAL_GROUND_INTAKE,
+    CORAL_GROUND_INTAKE_WITH_ALGAE,
     CORAL_GROUND_RECEIVE,
     PREPARE_TO_PLACE,
     MOVE_TO_L4,
@@ -55,6 +56,7 @@ public class SuperStructure extends SubsystemBase {
     PREPARE_TO_INTAKE,
     PREPARE_TO_RECEIVE,
     CORAL_GROUND_INTAKE,
+    CORAL_GROUND_INTAKE_WITH_ALGAE,
     CORAL_GROUND_RECEIVE,
     PREPARE_TO_PLACE,
     MOVE_TO_L4,
@@ -126,6 +128,8 @@ public class SuperStructure extends SubsystemBase {
         return CurrentSuperState.PREPARE_TO_RECEIVE;
       case CORAL_GROUND_INTAKE:
         return CurrentSuperState.CORAL_GROUND_INTAKE;
+      case CORAL_GROUND_INTAKE_WITH_ALGAE:
+        return CurrentSuperState.CORAL_GROUND_INTAKE_WITH_ALGAE;
       case CORAL_GROUND_RECEIVE:
         return CurrentSuperState.CORAL_GROUND_RECEIVE;
       case PREPARE_TO_PLACE:
@@ -133,13 +137,25 @@ public class SuperStructure extends SubsystemBase {
       case EJECT:
         return CurrentSuperState.EJECT;
       case MOVE_TO_L4:
-        return CurrentSuperState.MOVE_TO_L4;
+        if(previousSuperState==CurrentSuperState.PREPARE_TO_PLACE || isAReefState(previousSuperState)){
+          return CurrentSuperState.MOVE_TO_L4;
+        }
+        return CurrentSuperState.IDLE;
       case MOVE_TO_L3:
-        return CurrentSuperState.MOVE_TO_L3;
+        if(previousSuperState==CurrentSuperState.PREPARE_TO_PLACE || isAReefState(previousSuperState)){
+          return CurrentSuperState.MOVE_TO_L3;
+        }
+        return CurrentSuperState.IDLE;
       case MOVE_TO_L2:
-        return CurrentSuperState.MOVE_TO_L2;
+        if(previousSuperState==CurrentSuperState.PREPARE_TO_PLACE || isAReefState(previousSuperState)){
+          return CurrentSuperState.MOVE_TO_L2;
+        }
+        return CurrentSuperState.IDLE;
       case MOVE_TO_L1:
-        return CurrentSuperState.MOVE_TO_L1;
+        if(previousSuperState==CurrentSuperState.PREPARE_TO_PLACE || isAReefState(previousSuperState)){
+          return CurrentSuperState.MOVE_TO_L1;
+        }
+        return CurrentSuperState.IDLE;
       case MOVE_TO_BARGE:
         return CurrentSuperState.MOVE_TO_BARGE;
       case ALGAE_INTAKE_L2:
@@ -149,37 +165,37 @@ public class SuperStructure extends SubsystemBase {
       case START_AUTO:
         return CurrentSuperState.START_AUTO;
       case PLACE_L4:
-        if(previousSuperState==CurrentSuperState.MOVE_TO_L4){
+        if(previousSuperState==CurrentSuperState.MOVE_TO_L4 || previousSuperState==CurrentSuperState.PLACE_L4){
           return CurrentSuperState.PLACE_L4;
         }
         return CurrentSuperState.IDLE;
       case PLACE_L3:
-        if(previousSuperState==CurrentSuperState.MOVE_TO_L3){
+        if(previousSuperState==CurrentSuperState.MOVE_TO_L3 || previousSuperState==CurrentSuperState.PLACE_L3){
           return CurrentSuperState.PLACE_L3;
         }
         return CurrentSuperState.IDLE;
       case PLACE_L2:
-        if(previousSuperState==CurrentSuperState.MOVE_TO_L2){
+        if(previousSuperState==CurrentSuperState.MOVE_TO_L2 || previousSuperState==CurrentSuperState.PLACE_L2){
           return CurrentSuperState.PLACE_L2;
         }
         return CurrentSuperState.IDLE;
       case PLACE_L1:
-        if(previousSuperState==CurrentSuperState.MOVE_TO_L1){
+        if(previousSuperState==CurrentSuperState.MOVE_TO_L1 || previousSuperState==CurrentSuperState.PLACE_L1){
           return CurrentSuperState.PLACE_L1;
         }
         return CurrentSuperState.IDLE;
       case PULLOUT_ALGAE_INTAKE_L2:
-        if(previousSuperState==CurrentSuperState.ALGAE_INTAKE_L2){
+        if(previousSuperState==CurrentSuperState.ALGAE_INTAKE_L2 || isAReefState(previousSuperState)){
           return CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2;
         }
         return CurrentSuperState.IDLE;
       case PULLOUT_ALGAE_INTAKE_L3:
-        if(previousSuperState==CurrentSuperState.ALGAE_INTAKE_L3){
+        if(previousSuperState==CurrentSuperState.ALGAE_INTAKE_L3 || isAReefState(previousSuperState)){
           return CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3;
         }
         return CurrentSuperState.IDLE;
-        case STOW_ALGAE:
-        if(previousSuperState==CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2 || previousSuperState==CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3){
+      case STOW_ALGAE:
+        if(previousSuperState==CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2 || previousSuperState==CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3 || previousSuperState==CurrentSuperState.STOW_ALGAE){
           return CurrentSuperState.STOW_ALGAE;
         }
         return CurrentSuperState.IDLE;
@@ -207,6 +223,9 @@ public class SuperStructure extends SubsystemBase {
         break;
       case CORAL_GROUND_INTAKE:
         coralGroundIntake();
+        break;
+      case CORAL_GROUND_INTAKE_WITH_ALGAE:
+        coralGroundIntakeWithAlgae();
         break;
       case CORAL_GROUND_RECEIVE:
         coralGroundReceive();
@@ -297,6 +316,13 @@ public class SuperStructure extends SubsystemBase {
     }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.INTAKE);
   }
+
+  private void coralGroundIntakeWithAlgae(){
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.HOME);
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.HOME);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.INTAKE);
+  }
   
   private void coralGroundReceive(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.intake);
@@ -356,7 +382,9 @@ public class SuperStructure extends SubsystemBase {
 
   private void moveToL1(){
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveL1);
-    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL1);
+    if(armSubsystem.getAngle()>ArmConstants.safeL1){
+      elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.moveL1);
+    }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_CORAL);
   }
@@ -476,6 +504,19 @@ public class SuperStructure extends SubsystemBase {
 
   public boolean isIntaking(){
     return currentSuperState==CurrentSuperState.CORAL_GROUND_INTAKE;
+  }
+
+  public boolean isAReefState(CurrentSuperState superState){
+    return superState == CurrentSuperState.MOVE_TO_L1 ||
+      superState == CurrentSuperState.MOVE_TO_L1 ||
+      superState == CurrentSuperState.MOVE_TO_L2 ||
+      superState == CurrentSuperState.MOVE_TO_L3 ||
+      superState == CurrentSuperState.MOVE_TO_L4 ||
+      superState == CurrentSuperState.ALGAE_INTAKE_L2 ||
+      superState == CurrentSuperState.ALGAE_INTAKE_L3 ||
+      superState == CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2 ||
+      superState == CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3
+    ;
   }
 
 }
