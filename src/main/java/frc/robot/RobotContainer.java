@@ -92,6 +92,9 @@ public class RobotContainer {
 
   }
 
+  /**
+   * Will always wait 50 milliseconds minimum
+   */
   public Command waitUntil(BooleanSupplier... suppliers){
     BooleanSupplier combined = ()->{
       for (BooleanSupplier supplier : suppliers){
@@ -118,7 +121,7 @@ public class RobotContainer {
     enableTeleopDriving();
 
     // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
-    driver.povRight().debounce(0.05).onTrue(new InstantCommand(()->coralMode=!coralMode));
+    driver.povRight().debounce(0.1).onTrue(new InstantCommand(()->coralMode=!coralMode));
 
     //Rumble when breakbeam activated
     intakeSubsystem.getBeamBreakTrigger()
@@ -150,63 +153,69 @@ public class RobotContainer {
       new SequentialCommandGroup(
         waitUntil(()->!FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose())).withTimeout(2),
         new ConditionalCommand(
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE_WITH_ALGAE),superStructure),
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
-          this::getHasAlgae
-        ),
-        waitUntil(intakeSubsystem.getBeamBreakTrigger(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
-        new ConditionalCommand(
-          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE), superStructure),
-          pickupCoralSequence()
-          .until(this::getHasCoral)
-          .andThen(new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE))),
+          new SequentialCommandGroup(
+            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE_WITH_ALGAE),superStructure),
+            waitUntil(intakeSubsystem.getBeamBreakTrigger(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE), superStructure)
+          ),
+          new SequentialCommandGroup(
+            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
+            waitUntil(intakeSubsystem.getBeamBreakTrigger(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+            pickupCoralSequence().until(this::getHasCoral),
+            new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE))
+          ),
           this::getHasAlgae
         )
       ),
 
       pulloutAlgae(),
-      ()->coralMode
+      ()->coralMode || getHasAlgae()
     ));
 
       //Move To l1
-    driver.a().onTrue(
+    driver.a()
+    .and(()->getCoralMode()&&getHasCoral())
+    .onTrue(
       moveAndPlace(WantedSuperState.MOVE_TO_L1, WantedSuperState.PLACE_L1)
     );
       
     //Move To l2
-    driver.b().onTrue(new ConditionalCommand(
-      moveAndPlace(WantedSuperState.MOVE_TO_L2, WantedSuperState.PLACE_L2),
+    driver.b()
+    .and(()->getCoralMode()&&getHasCoral())
+    .onTrue(
+      moveAndPlace(WantedSuperState.MOVE_TO_L2, WantedSuperState.PLACE_L2)
+    ); 
+    driver.b()
+    .and(()->!getCoralMode())
+    .onTrue(
       new SequentialCommandGroup(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L2),superStructure),
         waitUntil(suctionSubsystem::getAlgaeSuctionGood),
         new InstantCommand(()->hasAlgae=true)
-      ),
-      ()->coralMode
-    )); 
+      )
+    ); 
 
     //Move To l3
-    driver.x().onTrue(new ConditionalCommand(
-      moveAndPlace(WantedSuperState.MOVE_TO_L3, WantedSuperState.PLACE_L3),
+    driver.x()
+    .and(()->getCoralMode()&&getHasCoral())
+    .onTrue(
+      moveAndPlace(WantedSuperState.MOVE_TO_L3, WantedSuperState.PLACE_L3)
+    )
+    ;
+    driver.x()
+    .and(()->!getCoralMode())
+    .onTrue(
       new SequentialCommandGroup(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3),superStructure),
         waitUntil(suctionSubsystem::getAlgaeSuctionGood),
         new InstantCommand(()->hasAlgae=true)
-      ),
-      ()->coralMode
-      ));
+      )
+    );
+
+    //and(has Coral) on true then we will run the command, so does not requirement conflict until the intake has satisfied
       
     //Move to L4
-    driver.y().onTrue(new ConditionalCommand(
-      moveAndPlace(WantedSuperState.MOVE_TO_L4, WantedSuperState.PLACE_L4),
-      new SequentialCommandGroup(
-      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_BARGE),superStructure),
-        waitUntil(swerveSubsystem::getCloseEnough),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.RELEASE_ALGAE_INTAKE), superStructure),
-        new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5))
-      
-      ),
-      ()->getCoralMode()
-    ))
+    driver.y()
     .whileTrue(
       new ConditionalCommand(
         new InstantCommand(), 
@@ -220,6 +229,20 @@ public class RobotContainer {
           enableTeleopDriving();
         }), 
         ()->getCoralMode()
+      )
+    )
+    //in theory, get has coral changes the state. by putting it in trigger, it will reupdate every loop. idk if thats desirable
+    .and(()->getCoralMode()&&getHasCoral())
+    .onTrue(moveAndPlace(WantedSuperState.MOVE_TO_L4, WantedSuperState.PLACE_L4))
+    ;
+    driver.y()
+    .and(()->!getCoralMode())
+    .onTrue(
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_BARGE),superStructure),
+        waitUntil(swerveSubsystem::getCloseEnough),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.RELEASE_ALGAE_INTAKE), superStructure),
+        new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5))
       )
     )
     ;

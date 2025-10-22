@@ -195,10 +195,7 @@ public class SuperStructure extends SubsystemBase {
         }
         return CurrentSuperState.IDLE;
       case STOW_ALGAE:
-        if(previousSuperState==CurrentSuperState.PULLOUT_ALGAE_INTAKE_L2 || previousSuperState==CurrentSuperState.PULLOUT_ALGAE_INTAKE_L3 || previousSuperState==CurrentSuperState.STOW_ALGAE){
-          return CurrentSuperState.STOW_ALGAE;
-        }
-        return CurrentSuperState.IDLE;
+        return CurrentSuperState.STOW_ALGAE;
       case RELEASE_ALGAE_INTAKE:
         return CurrentSuperState.RELEASE_ALGAE_INTAKE;
         
