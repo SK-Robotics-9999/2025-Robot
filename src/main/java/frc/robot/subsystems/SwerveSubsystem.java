@@ -48,7 +48,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   
   double maximumSpeed = 5.033;
-  public static final double MAXVELOCITYFORPID = 4.0; //meters
+  public static final double MAXVELOCITYFORPID = 5.0; //meters
   double maxVelocityForPID = MAXVELOCITYFORPID; //meters
   public static final double MAXOMEGA = 4.0; //radians per second
   double maxRotationalVelocityForPID = MAXOMEGA;
@@ -310,6 +310,8 @@ public class SwerveSubsystem extends SubsystemBase {
     if(linearDistance > Inches.of(0.5).in(Meters)){
       frictionConstant = staticFrictionConstant*maximumSpeed;
     }
+
+    linearDistance = Math.copySign(Math.pow(Math.abs(linearDistance), 2.0 / 3.0), linearDistance);
 
     Rotation2d angle = delta.getTranslation().getAngle();
     double velocity = 0.0;

@@ -61,7 +61,7 @@ public class RobotContainer {
   };
 
   
-  private boolean coralMode=true;
+  public boolean coralMode=true;
   public boolean hasCoral=false;//TODO: technically true at the start of auto, will fix after
   public boolean hasAlgae = false;
   // public boolean automationEnabled=true;
@@ -121,7 +121,7 @@ public class RobotContainer {
     enableTeleopDriving();
 
     // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
-    driver.povRight().debounce(0.1).onTrue(new InstantCommand(()->coralMode=!coralMode));
+    driver.povRight().debounce(0.025).onTrue(new InstantCommand(()->coralMode=!coralMode));
 
     //Rumble when breakbeam activated
     intakeSubsystem.getBeamBreakTrigger()
@@ -227,6 +227,7 @@ public class RobotContainer {
         .finallyDo((e)->{
           swerveSubsystem.setMaxPIDSpeed(SwerveSubsystem.MAXVELOCITYFORPID);
           enableTeleopDriving();
+          
         }), 
         ()->getCoralMode()
       )
@@ -242,7 +243,8 @@ public class RobotContainer {
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_BARGE),superStructure),
         waitUntil(swerveSubsystem::getCloseEnough),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.RELEASE_ALGAE_INTAKE), superStructure),
-        new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5))
+        new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5)),
+        new InstantCommand(()->coralMode=!coralMode)
       )
     )
     ;
@@ -265,9 +267,12 @@ public class RobotContainer {
         }
       },superStructure)
       .alongWith(new InstantCommand(()->hasCoral=false)),
+      
+      
       new InstantCommand(()->{
         superStructure.SetWantedState(WantedSuperState.RELEASE_ALGAE_INTAKE);
         hasAlgae=false;
+        coralMode =! coralMode;
       }, superStructure),
       ()->coralMode
     ));
@@ -315,11 +320,17 @@ public class RobotContainer {
     );
 
     driver.povUp().onTrue(
-      new SequentialCommandGroup(
+      new ConditionalCommand(new SequentialCommandGroup(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure),
         new InstantCommand(()->enableTeleopDriving()),
         new WaitCommand(5)
-      )
+      ), 
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE),superStructure),
+        new InstantCommand(()->enableTeleopDriving()),
+        new WaitCommand(5)
+      ), 
+      ()->coralMode && hasAlgae)
       );
 
     driver.povDown().onTrue(

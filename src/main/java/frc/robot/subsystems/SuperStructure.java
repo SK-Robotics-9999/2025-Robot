@@ -137,7 +137,7 @@ public class SuperStructure extends SubsystemBase {
       case EJECT:
         return CurrentSuperState.EJECT;
       case MOVE_TO_L4:
-        if(previousSuperState==CurrentSuperState.PREPARE_TO_PLACE || isAReefState(previousSuperState)){
+        if(previousSuperState==CurrentSuperState.PREPARE_TO_PLACE || isAReefState(previousSuperState) || previousSuperState==CurrentSuperState.START_AUTO){
           return CurrentSuperState.MOVE_TO_L4;
         }
         return CurrentSuperState.IDLE;

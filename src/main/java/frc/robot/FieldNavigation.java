@@ -71,12 +71,23 @@ public class FieldNavigation {
         add(AprilTagFieldLayout.loadField(AprilTagFields.k2025ReefscapeWelded).getTagPose(12).get().toPose2d());
     }};
 
-    public static List<Pose2d> customPosesSource = new ArrayList<>(){{
+    public static List<Pose2d> customePoseFirstSource = new ArrayList<>(){{
         add(new Pose2d(1.9, 1.1, new Rotation2d(Math.toRadians(-170))));
         add(new Pose2d(1.9, 2*4.026-1.1, new Rotation2d(Math.toRadians(170))));
         add(new Pose2d(17.55-1.9, 1.1, new Rotation2d(Math.toRadians(-10))));
         add(new Pose2d(17.55-1.9, 2*4.026-1.1, new Rotation2d(Math.toRadians(10))));
     }};
+
+    public static List<Pose2d> customePoseSecondSource = new ArrayList<>(){{
+        add(new Pose2d(2.204, 1.487, new Rotation2d(Math.toRadians(55))));
+        add(new Pose2d(2.074, 2*4.026-1.487, new Rotation2d(Math.toRadians(-55))));
+        add(new Pose2d(17.55-2.204, 1.487, new Rotation2d(Math.toRadians(-50))));
+        add(new Pose2d(17.55-2.204, 2*4.026-1.487, new Rotation2d(Math.toRadians(50))));
+    }};
+
+    
+
+
 
     public static List<Pose2d> customPosesBackup = new ArrayList<>(){{
         add(new Pose2d(4.5, 2.0, new Rotation2d(Math.toRadians(-170))));
@@ -196,8 +207,13 @@ public class FieldNavigation {
         
     }
 
-    public static Pose2d getCustomSource(Pose2d currentPose){
-        var nearest = currentPose.nearest(customPosesSource);
+    public static Pose2d getCustomFirstSource(Pose2d currentPose){
+        var nearest = currentPose.nearest(customePoseFirstSource);
+        return nearest;
+    }
+
+    public static Pose2d getCustomSecondSource(Pose2d currentPose){
+        var nearest = currentPose.nearest(customePoseSecondSource);
         return nearest;
     }
 

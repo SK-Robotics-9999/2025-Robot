@@ -320,7 +320,7 @@ public Command getStartAuto(Supplier<Pose2d> scorePose){
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4RightAutoLong")),
       getStartAuto(()->FieldNavigation.getCoralTag(false, 22, 9)),
-      getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 17, 8)),
+      getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomFirstSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 17, 8)),
       getCycleSequence(()->FieldNavigation.getFunny(17,8), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(true, 17, 8)),
       getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(true, 22, 9))
     );
@@ -330,9 +330,9 @@ public Command getStartAuto(Supplier<Pose2d> scorePose){
     return Commands.sequence(
       new InstantCommand(()->System.out.println("L4LeftAutoLong")),
       getStartAuto(()->FieldNavigation.getCoralTag(true, 20, 11)),
-      getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(true, 19, 6)),
-      getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 19, 6)),
-      getCycleSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 20, 11))
+      getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomFirstSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(true, 19, 6)),
+      getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSecondSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 19, 6)),
+      getCycleSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSecondSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 20, 11))
     );
   }
 
