@@ -46,6 +46,7 @@ public class SuperStructure extends SubsystemBase {
     PULLOUT_ALGAE_INTAKE_L2,
     STOW_ALGAE,
     RELEASE_ALGAE_INTAKE,
+    SCORE_ALGAE_BARGE,
     EJECT,
     START_AUTO
   }
@@ -74,6 +75,7 @@ public class SuperStructure extends SubsystemBase {
     PULLOUT_ALGAE_INTAKE_L2,
     STOW_ALGAE,
     RELEASE_ALGAE_INTAKE,
+    SCORE_ALGAE_BARGE,
     EJECT,
     START_AUTO
   }
@@ -196,6 +198,11 @@ public class SuperStructure extends SubsystemBase {
         return CurrentSuperState.IDLE;
       case STOW_ALGAE:
         return CurrentSuperState.STOW_ALGAE;
+      case SCORE_ALGAE_BARGE:
+        if(previousSuperState==CurrentSuperState.MOVE_TO_BARGE){
+          return CurrentSuperState.SCORE_ALGAE_BARGE;
+        }
+        return CurrentSuperState.RELEASE_ALGAE_INTAKE;
       case RELEASE_ALGAE_INTAKE:
         return CurrentSuperState.RELEASE_ALGAE_INTAKE;
         
@@ -247,6 +254,9 @@ public class SuperStructure extends SubsystemBase {
         break;
       case MOVE_TO_BARGE:
         moveToBarge();
+        break;
+      case SCORE_ALGAE_BARGE:
+        scoreInBarge();
         break;
       case ALGAE_INTAKE_L2:
         algaeIntakeL2();
@@ -387,10 +397,17 @@ public class SuperStructure extends SubsystemBase {
   }
 
   private void moveToBarge(){
-    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.barge);
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.moveBarge);
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.barge);
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
+  }
+
+  private void scoreInBarge(){
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.scoreBarge);
+    elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.barge);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.HOME);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.RELEASE);
   }
 
   private void placeAtL4(){

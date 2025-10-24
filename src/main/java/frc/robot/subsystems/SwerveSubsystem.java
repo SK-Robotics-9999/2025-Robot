@@ -311,7 +311,7 @@ public class SwerveSubsystem extends SubsystemBase {
       frictionConstant = staticFrictionConstant*maximumSpeed;
     }
 
-    linearDistance = Math.copySign(Math.pow(Math.abs(linearDistance), 2.0 / 3.0), linearDistance);
+    linearDistance = Math.pow(linearDistance, 5.0 / 6.0);
 
     Rotation2d angle = delta.getTranslation().getAngle();
     double velocity = 0.0;
@@ -383,10 +383,11 @@ public class SwerveSubsystem extends SubsystemBase {
   public boolean getOnTarget(){
     Transform2d delta = targetPose.minus(getPose());
     
-    return delta.getTranslation().getNorm()<Inches.of(1.5).in(Meters) 
-    && delta.getRotation().getDegrees()<5.0
+    return delta.getTranslation().getNorm()<Inches.of(1.0).in(Meters) 
+    && delta.getRotation().getDegrees()<3.0
     && systemState==SystemState.DRIVING_TO_POINT
-    && getVelocity()<Inches.of(6.0).in(Meters);
+    // && getVelocity()<Inches.of(6.0).in(Meters)
+    ;
   }
   
   /**
@@ -468,14 +469,14 @@ public class SwerveSubsystem extends SubsystemBase {
         SwerveSubsystem.WantedState.ASSISTED_TELEOP_DRIVE, 
         ()->{
           Rotation2d poseRotation = FieldNavigation.getNearestReef(getPose()).getRotation();
-          double xAssist = 0.2*Math.cos(poseRotation.getRadians());
+          double xAssist = 0.5*Math.cos(poseRotation.getRadians());
           xAssist *= isRed.getAsBoolean() ? -1 : 1;
 
           return xAssist;
         },
         ()->{
           Rotation2d poseRotation = FieldNavigation.getNearestReef(getPose()).getRotation();
-          double yAssist = 0.2*Math.sin(poseRotation.getRadians());
+          double yAssist = 0.5*Math.sin(poseRotation.getRadians());
           yAssist *= isRed.getAsBoolean() ? -1 : 1;
          
           return yAssist;

@@ -310,8 +310,8 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public void passStuff(){
-    passthroughLeft.setVoltage(2.4);
-    passthroughRight.setVoltage(-2.4);
+    passthroughLeft.setVoltage(4.8);
+    passthroughRight.setVoltage(-4.8);
   }
   
   public void stopPassthrough(){
@@ -321,8 +321,8 @@ public class IntakeSubsystem extends SubsystemBase {
   }
 
   public void holdPassthrough(){
-    passthroughLeft.setVoltage(0.8);
-    passthroughRight.setVoltage(-0.8);
+    passthroughLeft.setVoltage(0.2);
+    passthroughRight.setVoltage(-0.2);
   }
 
   public void SetWantedState(WantedState wantedState){

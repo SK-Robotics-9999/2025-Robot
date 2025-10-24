@@ -13,7 +13,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 
 public class LEDSubsystem extends SubsystemBase {
-  Spark leds = new Spark(9);
+  Spark leds = new Spark(0);
   BooleanSupplier algaeMode = ()->false;
 
   public static enum BlinkinPattern{
@@ -75,7 +75,7 @@ public class LEDSubsystem extends SubsystemBase {
   }
 
   public void blink(BlinkinPattern pattern, double seconds){
-    final double interval = 0.13; //seconds
+    final double interval = 0.08; //seconds
 
     Commands.repeatingSequence(
       Commands.runOnce(()-> setPattern(pattern), this),

@@ -109,6 +109,22 @@ public class RobotContainer {
   }
 
   /**
+   * Does NOT wait 50 milliseconds minimum
+   */
+  public Command trueWaitUntil(BooleanSupplier... suppliers){
+    BooleanSupplier combined = ()->{
+      for (BooleanSupplier supplier : suppliers){
+        if (!supplier.getAsBoolean()){
+          return false;
+        }
+      }
+      return true;
+    };
+
+    return new RunCommand(()->{}).until(combined);
+  }
+
+  /**
    * Use this method to define your trigger->command mappings. Triggers can be created via the
    * {@link Trigger#Trigger(java.util.function.BooleanSupplier)} constructor with an arbitrary
    * predicate, or via the named factories in {@link
@@ -126,16 +142,16 @@ public class RobotContainer {
     //Rumble when breakbeam activated
     intakeSubsystem.getBeamBreakTrigger()
     .onTrue(new StartEndCommand(()->driver.setRumble(RumbleType.kBothRumble, 0.3), ()->driver.setRumble(RumbleType.kBothRumble, 0.0)).withTimeout(0.5))
-    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.GREEN, 1.5)))
+    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.GREEN, 0.8)))
     ;
     
     new Trigger(()->!coralMode && suctionSubsystem.getAlgaeSuctionGood())
     .onTrue(new StartEndCommand(()->driver.setRumble(RumbleType.kBothRumble, 0.3), ()->driver.setRumble(RumbleType.kBothRumble, 0.0)).withTimeout(0.5))
-    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE, 1.5)))
+    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE, 0.8)))
     ;
 
     new Trigger(swerveSubsystem::getOnTarget)
-    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.ORANGE, 1.5)))
+    .onTrue(new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.HOT_PINK, 0.8)))
     ;
 
     //intake
@@ -155,16 +171,16 @@ public class RobotContainer {
         new ConditionalCommand(
           new SequentialCommandGroup(
             new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE_WITH_ALGAE),superStructure),
-            waitUntil(intakeSubsystem.getBeamBreakTrigger(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+            trueWaitUntil(intakeSubsystem.getBeamBreakTrigger()),
             new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE), superStructure)
           ),
           new SequentialCommandGroup(
             new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
-            waitUntil(intakeSubsystem.getBeamBreakTrigger(),armSubsystem::getOnTarget, elevatorSubsystem::getOnTarget),
+            trueWaitUntil(intakeSubsystem.getBeamBreakTrigger()),
             pickupCoralSequence().until(this::getHasCoral),
             new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE))
           ),
-          this::getHasAlgae
+          ()->hasAlgae//don't need to repoll result
         )
       ),
 
@@ -242,7 +258,7 @@ public class RobotContainer {
       new SequentialCommandGroup(
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_BARGE),superStructure),
         waitUntil(swerveSubsystem::getCloseEnough),
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.RELEASE_ALGAE_INTAKE), superStructure),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.SCORE_ALGAE_BARGE), superStructure),
         new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5)),
         new InstantCommand(()->coralMode=!coralMode)
       )
@@ -270,7 +286,7 @@ public class RobotContainer {
       
       
       new InstantCommand(()->{
-        superStructure.SetWantedState(WantedSuperState.RELEASE_ALGAE_INTAKE);
+        superStructure.SetWantedState(WantedSuperState.SCORE_ALGAE_BARGE);
         hasAlgae=false;
         coralMode =! coralMode;
       }, superStructure),
@@ -320,17 +336,18 @@ public class RobotContainer {
     );
 
     driver.povUp().onTrue(
-      new ConditionalCommand(new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure),
-        new InstantCommand(()->enableTeleopDriving()),
-        new WaitCommand(5)
+      new ConditionalCommand(
+        new SequentialCommandGroup(
+          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure),
+          new InstantCommand(()->enableTeleopDriving()),
+          new WaitCommand(5)
       ), 
-      new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE),superStructure),
-        new InstantCommand(()->enableTeleopDriving()),
-        new WaitCommand(5)
+        new SequentialCommandGroup(
+          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE),superStructure),
+          new InstantCommand(()->enableTeleopDriving()),
+          new WaitCommand(5)
       ), 
-      ()->coralMode && hasAlgae)
+      ()->!getHasAlgae())
       );
 
     driver.povDown().onTrue(

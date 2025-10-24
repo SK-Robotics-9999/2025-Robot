@@ -171,7 +171,7 @@
         }
         
         public boolean getAlgaeSuctionApplied(){
-            return getPressure()>40.0;
+            return getPressure()>35.0;
         }
 
 
