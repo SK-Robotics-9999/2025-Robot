@@ -332,7 +332,7 @@ public Command getStartAuto(Supplier<Pose2d> scorePose){
       getStartAuto(()->FieldNavigation.getCoralTag(true, 20, 11)),
       getCycleSequence(()->FieldNavigation.getCustomBackup(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomFirstSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(true, 19, 6)),
       getCycleSequence(()->FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSecondSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 19, 6)),
-      getCycleSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSecondSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 20, 11))
+      getCycleSequence(()->FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose()), ()->FieldNavigation.getCustomSecondSource(swerveSubsystem.getPose()), ()->FieldNavigation.getCoralTag(false, 18, 7))
     );
   }
 

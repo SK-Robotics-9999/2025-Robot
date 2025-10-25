@@ -34,6 +34,7 @@ import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -178,7 +179,7 @@ public class VisionSubsystem extends SubsystemBase {
         || result.getBestTarget().getPoseAmbiguity()>0.4 
         || swerve.getVelocity()>2 
         || swerve.getAngularVelocity()>Math.toRadians(45.0)
-        || superStructure.isIntaking()
+        || (superStructure.isIntaking() && DriverStation.isTeleop())
         //add if target is more than 10 or whatever
       ){
         continue;

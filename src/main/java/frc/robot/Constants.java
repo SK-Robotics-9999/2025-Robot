@@ -62,7 +62,7 @@ public final class Constants {
     public static final double moveL2 = 20;
     public static final double moveL3 = 20;
     public static final double moveL4 = 35; 
-    public static final double scoreL1 = -10;
+    public static final double scoreL1 = -30;
     public static final double scoreL2 = 25;
     public static final double scoreL3 = 25;
     public static final double scoreL4 = 15;
@@ -80,12 +80,12 @@ public final class Constants {
     public static final double moveL4 = 48.0;
     public static final double moveL3 = 29.0;
     public static final double moveL2 = 12.0;
-    public static final double moveL1 = 13.0;
+    public static final double moveL1 = 15.0;
     public static final double barge = 53.0;
     public static final double scoreL4 = 42.0;
     public static final double scoreL3 = 20.0;
     public static final double scoreL2 = 3.0;
-    public static final double scoreL1 = 10.0;
+    public static final double scoreL1 = 15.0;
     public static final double algael3 = 31.5;
     public static final double algael2 = 16.0;
     public static final double pulloutAlgael3 = 34.0;
