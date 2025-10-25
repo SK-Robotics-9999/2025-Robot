@@ -81,10 +81,10 @@ public class SwerveSubsystem extends SubsystemBase {
   private boolean assisterIsRobotRelative=false;
 
 
-  private final PIDController autoCont = new PIDController(3.0, 0, 0.3);
-  private final PIDController teleOpCont = new PIDController(3.0, 0, 0.3);
+  private final PIDController autoCont = new PIDController(3.15, 0, 0.3);
+  private final PIDController teleOpCont = new PIDController(3.15, 0, 0.3);
 
-  private final PIDController thetaCont = new PIDController(2.5, 0, 0);
+  private final PIDController thetaCont = new PIDController(2.75, 0, 0);
 
   private double staticFrictionConstant = 0.03;
 

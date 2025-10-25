@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
@@ -192,7 +193,11 @@ public class RobotContainer {
     driver.a()
     .and(()->getCoralMode()&&getHasCoral())
     .onTrue(
+      new SequentialCommandGroup(
       moveAndPlace(WantedSuperState.MOVE_TO_L1, WantedSuperState.PLACE_L1)
+        // new WaitCommand(0.2), //do we need to wait briefly?
+        // new StartEndCommand(()->driver.setRumble(RumbleType.kBothRumble, 0.5), ()->driver.setRumble(RumbleType.kBothRumble, 0.0)).withTimeout(0.5)
+      )
     );
       
     //Move To l2
@@ -296,7 +301,13 @@ public class RobotContainer {
     driver.leftBumper().whileTrue(new SequentialCommandGroup(
         // new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
         // waitUntil(swerveSubsystem::getCloseEnough).withTimeout(3.0),
-        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralRight(swerveSubsystem.getPose())), swerveSubsystem),
+        new InstantCommand(()->{
+          Pose2d rightAlign = FieldNavigation.getCoralRight(swerveSubsystem.getPose());
+          if(superStructure.getCurrentSuperState()==CurrentSuperState.MOVE_TO_L1 || superStructure.getCurrentSuperState()==CurrentSuperState.PLACE_L1){
+            rightAlign = rightAlign.transformBy(new Transform2d(Inches.of(-2).in(Meters),Inches.of(-6).in(Meters),new Rotation2d()));
+          }
+          swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, rightAlign);
+        }, swerveSubsystem),
         waitUntil(()->false)
       )
       .until(()->!superStructure.getIsAtReefState() && FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))
@@ -306,7 +317,13 @@ public class RobotContainer {
     driver.rightBumper().whileTrue(new SequentialCommandGroup(
         // new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getOffsetCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
         // waitUntil(swerveSubsystem::getCloseEnough).withTimeout(3.0),
-        new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getCoralLeft(swerveSubsystem.getPose())), swerveSubsystem),
+        new InstantCommand(()->{
+          Pose2d leftAlign = FieldNavigation.getCoralLeft(swerveSubsystem.getPose());
+          if(superStructure.getCurrentSuperState()==CurrentSuperState.MOVE_TO_L1 || superStructure.getCurrentSuperState()==CurrentSuperState.PLACE_L1){
+            leftAlign = leftAlign.transformBy(new Transform2d(Inches.of(-2).in(Meters),Inches.of(6).in(Meters),new Rotation2d()));
+          }
+          swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, leftAlign);
+        }, swerveSubsystem),
         waitUntil(()->false)
       )
       .until(()->!superStructure.getIsAtReefState() && FieldNavigation.getTooCloseToTag(swerveSubsystem.getPose()))

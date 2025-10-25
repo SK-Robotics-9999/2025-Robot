@@ -283,7 +283,7 @@ public Command getCycleSequence(Supplier<Pose2d> backupPose, Supplier<Pose2d> in
 public Command getStartAuto(Supplier<Pose2d> scorePose){
   return Commands.sequence(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.START_AUTO)),
-      waitUntil(suctionSubsystem::getCoralSuctionGood).withTimeout(1.5),
+      // waitUntil(suctionSubsystem::getCoralSuctionGood).withTimeout(1.5),
       new ParallelCommandGroup(
         new SequentialCommandGroup(
           new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, scorePose.get()), swerveSubsystem),

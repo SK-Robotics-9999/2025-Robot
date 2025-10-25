@@ -72,13 +72,13 @@ public class FieldNavigation {
     }};
 
     public static List<Pose2d> customePoseFirstSource = new ArrayList<>(){{
-        add(new Pose2d(1.8, 1.0, new Rotation2d(Math.toRadians(-150))));
-        add(new Pose2d(1.8, 2*4.026-1.0, new Rotation2d(Math.toRadians(150))));
-        add(new Pose2d(17.55-1.8, 1.0, new Rotation2d(Math.toRadians(-30))));
-        add(new Pose2d(17.55-1.8, 2*4.026-1.0, new Rotation2d(Math.toRadians(30))));
+        add(new Pose2d(2.2, 0.75, new Rotation2d(Math.toRadians(-150))));
+        add(new Pose2d(2.2, 2*4.026-1.0, new Rotation2d(Math.toRadians(150))));
+        add(new Pose2d(17.55-2.2, 0.75, new Rotation2d(Math.toRadians(-30))));
+        add(new Pose2d(17.55-2.2, 2*4.026-0.75, new Rotation2d(Math.toRadians(30))));
     }};
 
-    private static final double customePoseSecondX = 2.2;
+    private static final double customePoseSecondX = 2.25;
     private static final double customePoseSecondY = 0.75;
     public static List<Pose2d> customePoseSecondSource = new ArrayList<>(){{
         add(new Pose2d(customePoseSecondX, customePoseSecondY, new Rotation2d(Math.toRadians(-130))));
@@ -90,12 +90,13 @@ public class FieldNavigation {
     
 
 
-
+    private static final double customPoseBackupX = 4.0;
+    private static final double customPoseBackupY = 1.5;
     public static List<Pose2d> customPosesBackup = new ArrayList<>(){{
-        add(new Pose2d(4.5, 1.3, new Rotation2d(Math.toRadians(-150))));
-        add(new Pose2d(4.5, 2*4.026-1.3, new Rotation2d(Math.toRadians(150))));
-        add(new Pose2d(17.55-4.5, 1.3, new Rotation2d(Math.toRadians(-30))));
-        add(new Pose2d(17.55-4.5, 2*4.026-1.3, new Rotation2d(Math.toRadians(30))));
+        add(new Pose2d(customPoseBackupX, customPoseBackupY, new Rotation2d(Math.toRadians(-150))));
+        add(new Pose2d(customPoseBackupX, 2*4.026-customPoseBackupY, new Rotation2d(Math.toRadians(150))));
+        add(new Pose2d(17.55-customPoseBackupX, customPoseBackupY, new Rotation2d(Math.toRadians(-30))));
+        add(new Pose2d(17.55-customPoseBackupX, 2*4.026-customPoseBackupY, new Rotation2d(Math.toRadians(30))));
     }};
 
     public static List<Pose2d> tagsProcessor = new ArrayList<>(){{
