@@ -45,6 +45,8 @@ import frc.robot.subsystems.VisionSubsystem;
 import frc.robot.subsystems.IntakeSubsystem.WantedState;
 import frc.robot.subsystems.LEDSubsystem.BlinkinPattern;
 import frc.robot.Autos;
+import frc.robot.Constants.ArmConstants;
+import frc.robot.Constants.ElevatorConstants;
 
 /** 
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -181,7 +183,7 @@ public class RobotContainer {
             pickupCoralSequence().until(this::getHasCoral),
             new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE))
           ),
-          ()->hasAlgae//don't need to repoll result
+          ()->getHasAlgae()//don't need to repoll result
         )
       ),
 
@@ -199,6 +201,15 @@ public class RobotContainer {
         // new StartEndCommand(()->driver.setRumble(RumbleType.kBothRumble, 0.5), ()->driver.setRumble(RumbleType.kBothRumble, 0.0)).withTimeout(0.5)
       )
     );
+    driver.a()
+    .and(()->!getCoralMode())
+    .onTrue(
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_GROUND_INTAKE),superStructure),
+        waitUntil(suctionSubsystem::getAlgaeSuctionGood),
+        new InstantCommand(()->hasAlgae=true)
+      )
+    ); 
       
     //Move To l2
     driver.b()
@@ -233,6 +244,11 @@ public class RobotContainer {
       )
     );
 
+    //HOPEFULLY WORKS
+    driver.povLeft()
+    .onTrue(new InstantCommand(()->swerveSubsystem.resetGyro())
+    );
+
     //and(has Coral) on true then we will run the command, so does not requirement conflict until the intake has satisfied
       
     //Move to L4
@@ -241,7 +257,7 @@ public class RobotContainer {
       new ConditionalCommand(
         new InstantCommand(), 
         new SequentialCommandGroup(
-          new InstantCommand(()->swerveSubsystem.setMaxPIDSpeed(1.0)),
+          new InstantCommand(()->swerveSubsystem.setMaxPIDSpeed(3.0)),
           new InstantCommand(()->swerveSubsystem.SetWantedState(SwerveSubsystem.WantedState.DRIVE_TO_POINT, FieldNavigation.getBargeScorePose(swerveSubsystem.getPose()))),
           waitUntil(swerveSubsystem::getCloseEnough)
         )
@@ -265,7 +281,8 @@ public class RobotContainer {
         waitUntil(swerveSubsystem::getCloseEnough),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.SCORE_ALGAE_BARGE), superStructure),
         new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.BLUE_VIOLET, 1.5)),
-        new InstantCommand(()->coralMode=!coralMode)
+        new InstantCommand(()->coralMode=!coralMode),
+        new InstantCommand(()->hasAlgae=false)
       )
     )
     ;
@@ -403,7 +420,7 @@ public class RobotContainer {
       )
       .until(suctionSubsystem::getCoralSuctionGood),
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE),superStructure),
-      waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget),
+      waitUntil(()->elevatorSubsystem.getOnTarget(ElevatorConstants.postIntake, 3), ()->armSubsystem.getOnTarget(ArmConstants.intakeAngle, 5)),
       new InstantCommand(()->hasCoral=true)
     );
   }
@@ -426,7 +443,7 @@ public class RobotContainer {
       new InstantCommand(()->superStructure.SetWantedState(moveTo),superStructure),
       waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget, swerveSubsystem::getOnScoringPose),
       new InstantCommand(()->superStructure.SetWantedState(placeAt),superStructure),
-      waitUntil(elevatorSubsystem::getOnTarget, armSubsystem::getOnTarget).withTimeout(0.5),
+      waitUntil(elevatorSubsystem::getOnTarget).withTimeout(0.5),// armSubsystem::getOnTarget).withTimeout(0.5),
       new InstantCommand(()->ledSubsystem.blink(BlinkinPattern.RED_ORANGE, 2)),
       new InstantCommand(()->hasCoral=false)
     );

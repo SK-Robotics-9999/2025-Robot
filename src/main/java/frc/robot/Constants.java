@@ -90,7 +90,7 @@ public final class Constants {
     public static final double algael2 = 16.0;
     public static final double pulloutAlgael3 = 34.0;
     public static final double pulloutAlgael2 = 20.0;
-    public static final double algaeGround = 10.0;
+    public static final double algaeGround = 1.0;
   }
 
 }

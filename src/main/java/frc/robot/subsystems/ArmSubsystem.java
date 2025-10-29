@@ -57,7 +57,7 @@ public class ArmSubsystem extends SubsystemBase {
   private double targetAngle = 90.0;
 
   private final double maxVelocity = 450.0; //degrees per second, i hope
-  private final double maxAccel = 1000.0; //already maxes out, beyond maxing out, cant exactly follow profile, but pushes it to be faster
+  private final double maxAccel = 2000.0; //already maxes out, beyond maxing out, cant exactly follow profile, but pushes it to be faster
   private final double maxAlgaeAccel = 375.0;
   private final TrapezoidProfile trapProfile = new TrapezoidProfile(
     new TrapezoidProfile.Constraints(maxVelocity, maxAccel)

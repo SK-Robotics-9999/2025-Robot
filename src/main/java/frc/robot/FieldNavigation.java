@@ -72,14 +72,14 @@ public class FieldNavigation {
     }};
 
     public static List<Pose2d> customePoseFirstSource = new ArrayList<>(){{
-        add(new Pose2d(2.2, 0.75, new Rotation2d(Math.toRadians(-150))));
-        add(new Pose2d(2.2, 2*4.026-1.0, new Rotation2d(Math.toRadians(150))));
-        add(new Pose2d(17.55-2.2, 0.75, new Rotation2d(Math.toRadians(-30))));
-        add(new Pose2d(17.55-2.2, 2*4.026-0.75, new Rotation2d(Math.toRadians(30))));
+        add(new Pose2d(1.8, 0.75, new Rotation2d(Math.toRadians(-140))));
+        add(new Pose2d(1.8, 2*4.026-0.75, new Rotation2d(Math.toRadians(140))));
+        add(new Pose2d(17.55-1.8, 0.75, new Rotation2d(Math.toRadians(-40))));
+        add(new Pose2d(17.55-1.8, 2*4.026-0.75, new Rotation2d(Math.toRadians(40))));
     }};
 
-    private static final double customePoseSecondX = 2.25;
-    private static final double customePoseSecondY = 0.75;
+    private static final double customePoseSecondX = 1.8;
+    private static final double customePoseSecondY = 0.8;
     public static List<Pose2d> customePoseSecondSource = new ArrayList<>(){{
         add(new Pose2d(customePoseSecondX, customePoseSecondY, new Rotation2d(Math.toRadians(-130))));
         add(new Pose2d(customePoseSecondX, 2*4.026-customePoseSecondY, new Rotation2d(Math.toRadians(130))));

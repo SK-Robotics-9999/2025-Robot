@@ -164,6 +164,10 @@
         public boolean getCoralSuctionApplied(){
             return getPressure()>20.0;
         }
+
+        public boolean getCoralSuctionAuto(){
+            return getPressure()>13.0;
+        }
         
         
         public boolean getAlgaeSuctionGood(){
