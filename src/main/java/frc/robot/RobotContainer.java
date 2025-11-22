@@ -433,8 +433,8 @@ public class RobotContainer {
     );
 
     //TODO: Make sure this works
-    //idk - algae eject
-    funniOperator.button(13).onTrue(
+    //right trigger - algae eject
+    funniOperator.rightTrigger().onTrue(
       new InstantCommand(()->suctionSubsystem.SetWantedState(frc.robot.subsystems.SuctionSubsystem.WantedState.RELEASE), superStructure)
     );
 
@@ -460,8 +460,8 @@ public class RobotContainer {
     ;
 
     //TODO: check processor superstate, check the onTrue onFalse
-    //idk - processor
-    funniOperator.button(14).onTrue(
+    //pov down - processor
+    funniOperator.povDown().onTrue(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_PROCESSOR), superStructure)
     )
     .onFalse(
@@ -503,8 +503,8 @@ public class RobotContainer {
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4), superStructure)
     );
 
-    //idk - score + drop algae
-    funniOperator.button(12).onTrue(
+    //left trigger - score + drop algae
+    funniOperator.leftTrigger().onTrue(
       new ConditionalCommand(
         new InstantCommand(()->suctionSubsystem.SetWantedState(frc.robot.subsystems.SuctionSubsystem.WantedState.RELEASE)), 
         new InstantCommand(()->{
@@ -527,8 +527,8 @@ public class RobotContainer {
       )
     );
 
-    //idk - home
-    funniOperator.button(17).onTrue(
+    //pov up - home
+    funniOperator.povUp().onTrue(
       new ConditionalCommand(
         new SequentialCommandGroup(
           new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure),
