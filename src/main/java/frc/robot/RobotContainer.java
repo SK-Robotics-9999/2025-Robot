@@ -87,12 +87,17 @@ public class RobotContainer {
   CommandXboxController driver = new CommandXboxController(0);
   CommandXboxController vitaliy = new CommandXboxController(1);
 
+  CommandXboxController funniDriver = new CommandXboxController(2);
+  CommandXboxController funniOperator = new CommandXboxController(3);
+
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
-    configureBindings();
+    enableTeleopDriving(); //NECESSARY!!!!
 
+    configureBindings();
+    configureFunniButtons();
   }
 
   /**
@@ -137,8 +142,6 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    enableTeleopDriving();
-
     // driver.start().onTrue(new InstantCommand(()->swerveSubsystem.resetGyro()));
     driver.povRight().debounce(0.025).onTrue(new InstantCommand(()->coralMode=!coralMode));
 
@@ -401,6 +404,144 @@ public class RobotContainer {
     //   )
     //   .finallyDo(()->intakeSubsystem.SetWantedState(WantedState.HOME))
     // );
+  }
+
+  //TODO: make all commands turn on either coral or algae mode immediately
+  public void configureFunniButtons(){
+    funniDriver.start().onTrue(
+      new InstantCommand(()->swerveSubsystem.resetGyro())
+    );
+
+    //a - L3 algae
+    funniOperator.button(1).onTrue(
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3), superStructure),
+        waitUntil(suctionSubsystem::getAlgaeSuctionGood),
+        new InstantCommand(()->hasAlgae=true),
+        pulloutAlgae()
+      )
+    );
+
+    //back - L2 algae
+    funniOperator.button(7).onTrue(
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3), superStructure),
+        waitUntil(suctionSubsystem::getAlgaeSuctionGood),
+        new InstantCommand(()->hasAlgae=true),
+        pulloutAlgae()
+      )
+    );
+
+    //TODO: Make sure this works
+    //idk - algae eject
+    funniOperator.button(13).onTrue(
+      new InstantCommand(()->suctionSubsystem.SetWantedState(frc.robot.subsystems.SuctionSubsystem.WantedState.RELEASE), superStructure)
+    );
+
+    //TODO: Make sure goes back to stow correctly
+    //b - algae intake - ground
+    funniOperator.button(2).onTrue(
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_GROUND_INTAKE),superStructure),
+        waitUntil(suctionSubsystem::getAlgaeSuctionGood),
+        new InstantCommand(()->hasAlgae=true),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE), superStructure)
+      )
+    );
+
+    //TODO: Check the onTrue onFalse
+    //start - algae net
+    funniOperator.button(8).onTrue(
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_BARGE), superStructure)
+    )
+    .onFalse(
+      new InstantCommand(()->suctionSubsystem.SetWantedState(frc.robot.subsystems.SuctionSubsystem.WantedState.RELEASE), superStructure)
+    )
+    ;
+
+    //TODO: check processor superstate, check the onTrue onFalse
+    //idk - processor
+    funniOperator.button(14).onTrue(
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_PROCESSOR), superStructure)
+    )
+    .onFalse(
+      new InstantCommand(()->suctionSubsystem.SetWantedState(frc.robot.subsystems.SuctionSubsystem.WantedState.RELEASE), superStructure)
+    );
+
+    //x - climber up, really just leds, this is FINAL, already climbed, stage
+    funniOperator.button(3).onTrue(
+      new InstantCommand(()->ledSubsystem.setPattern(BlinkinPattern.LIME, 10), ledSubsystem)
+    );
+    
+    //left stick - climber down, preparing to climb
+    funniOperator.button(9).onTrue(
+      new InstantCommand(()->ledSubsystem.setPattern(BlinkinPattern.GRAY, 10), ledSubsystem)
+    );
+
+    //y - l2, also l1 but wtv
+    funniOperator.button(4).onTrue(
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L2), superStructure)
+    );
+
+    //right stick - intake (+ pickup)
+    funniOperator.button(10).onTrue(
+      new SequentialCommandGroup(
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.CORAL_GROUND_INTAKE),superStructure),
+        trueWaitUntil(intakeSubsystem.getBeamBreakTrigger()),
+        pickupCoralSequence().until(this::getHasCoral),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE), superStructure)
+      )
+    );
+
+    //left bumper - l3
+    funniOperator.button(5).onTrue(
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L3), superStructure)
+    );
+    
+    //right bumper - l4
+    funniOperator.button(6).onTrue(
+      new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4), superStructure)
+    );
+
+    //idk - score + drop algae
+    funniOperator.button(12).onTrue(
+      new ConditionalCommand(
+        new InstantCommand(()->suctionSubsystem.SetWantedState(frc.robot.subsystems.SuctionSubsystem.WantedState.RELEASE)), 
+        new InstantCommand(()->{
+          switch(superStructure.getCurrentSuperState()){
+            case MOVE_TO_L1:
+              superStructure.SetWantedState(WantedSuperState.PLACE_L1);
+              break;
+            case MOVE_TO_L2:
+              superStructure.SetWantedState(WantedSuperState.PLACE_L2);
+              break;
+            case MOVE_TO_L3:
+              superStructure.SetWantedState(WantedSuperState.PLACE_L3);
+              break;
+            case MOVE_TO_L4:
+              superStructure.SetWantedState(WantedSuperState.PLACE_L4);
+              break;
+          }
+        },superStructure), 
+        this::getHasAlgae
+      )
+    );
+
+    //idk - home
+    funniOperator.button(17).onTrue(
+      new ConditionalCommand(
+        new SequentialCommandGroup(
+          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.HOME),superStructure),
+          new InstantCommand(()->enableTeleopDriving()),
+          new WaitCommand(5)
+      ), 
+        new SequentialCommandGroup(
+          new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE),superStructure),
+          new InstantCommand(()->enableTeleopDriving()),
+          new WaitCommand(5)
+      ), 
+      ()->!getHasAlgae())
+      );
   }
 
   public Command pickupCoralSequence(){

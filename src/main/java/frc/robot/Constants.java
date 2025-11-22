@@ -71,6 +71,7 @@ public final class Constants {
     public static final double algaeReefIntake = 0;
     public static final double pulloutAlgaeReefIntake = 3;
     public static final double algaeGroundIntake = -30;
+    public static final double algaeProcessor = 0;
   }
 
   public static class ElevatorConstants{
@@ -91,6 +92,7 @@ public final class Constants {
     public static final double pulloutAlgael3 = 34.0;
     public static final double pulloutAlgael2 = 20.0;
     public static final double algaeGround = 1.0;
+    public static final double algaeProcessor = 8.0;
   }
 
 }

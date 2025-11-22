@@ -43,6 +43,7 @@ public class SuperStructure extends SubsystemBase {
     ALGAE_INTAKE_L3,
     ALGAE_INTAKE_L2,
     ALGAE_GROUND_INTAKE,
+    ALGAE_PROCESSOR,
     PULLOUT_ALGAE_INTAKE_L3,
     PULLOUT_ALGAE_INTAKE_L2,
     STOW_ALGAE,
@@ -73,6 +74,7 @@ public class SuperStructure extends SubsystemBase {
     ALGAE_INTAKE_L3,
     ALGAE_INTAKE_L2,
     ALGAE_GROUND_INTAKE,
+    ALGAE_PROCESSOR,
     PULLOUT_ALGAE_INTAKE_L3,
     PULLOUT_ALGAE_INTAKE_L2,
     STOW_ALGAE,
@@ -168,6 +170,8 @@ public class SuperStructure extends SubsystemBase {
         return CurrentSuperState.ALGAE_INTAKE_L3;
       case ALGAE_GROUND_INTAKE:
         return CurrentSuperState.ALGAE_GROUND_INTAKE;
+      case ALGAE_PROCESSOR:
+        return CurrentSuperState.ALGAE_PROCESSOR;
       case START_AUTO:
         return CurrentSuperState.START_AUTO;
       case PLACE_L4:
@@ -270,6 +274,9 @@ public class SuperStructure extends SubsystemBase {
         break;
       case ALGAE_GROUND_INTAKE:
         algaeIntakeGround();
+        break;
+      case ALGAE_PROCESSOR:
+        algaeProcessor();
         break;
       case PLACE_L4:
         placeAtL4();
@@ -464,6 +471,16 @@ public class SuperStructure extends SubsystemBase {
   private void algaeIntakeGround(){
     elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.algaeGround);
     armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.algaeGroundIntake);
+    intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
+    suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
+  }
+
+  private void algaeProcessor(){
+    armSubsystem.SetWantedState(ArmSubsystem.WantedState.MOVE_TO_POSITION, ArmConstants.algaeProcessor);
+    //if() need safety, just set it statically in method cuz lazy
+    if(armSubsystem.getAngle()>-10.0){
+      elevatorSubsystem.SetWantedState(ElevatorSubsystem.WantedState.MOVE_TO_POSITION, ElevatorConstants.algaeProcessor);
+    }
     intakeSubsystem.SetWantedState(IntakeSubsystem.WantedState.IDLE);
     suctionSubsystem.SetWantedState(SuctionSubsystem.WantedState.INTAKE_ALGAE);
   }
