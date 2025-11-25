@@ -406,7 +406,6 @@ public class RobotContainer {
     // );
   }
 
-  //TODO: make all commands turn on either coral or algae mode immediately
   public void configureFunniButtons(){
     funniDriver.start().onTrue(
       new InstantCommand(()->swerveSubsystem.resetGyro())
@@ -420,17 +419,19 @@ public class RobotContainer {
         new InstantCommand(()->hasAlgae=true),
         pulloutAlgae()
       )
-    );
+    )
+    .onTrue(new InstantCommand(()->coralMode=false));
 
     //back - L2 algae
     funniOperator.button(7).onTrue(
       new SequentialCommandGroup(
-        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L3), superStructure),
+        new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.ALGAE_INTAKE_L2), superStructure),
         waitUntil(suctionSubsystem::getAlgaeSuctionGood),
         new InstantCommand(()->hasAlgae=true),
         pulloutAlgae()
       )
-    );
+    )
+    .onTrue(new InstantCommand(()->coralMode=false));
 
     //TODO: Make sure this works
     //right trigger - algae eject
@@ -447,7 +448,8 @@ public class RobotContainer {
         new InstantCommand(()->hasAlgae=true),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.STOW_ALGAE), superStructure)
       )
-    );
+    )
+    .onTrue(new InstantCommand(()->coralMode=false));
 
     //TODO: Check the onTrue onFalse
     //start - algae net
@@ -457,6 +459,7 @@ public class RobotContainer {
     .onFalse(
       new InstantCommand(()->suctionSubsystem.SetWantedState(frc.robot.subsystems.SuctionSubsystem.WantedState.RELEASE), superStructure)
     )
+    .onTrue(new InstantCommand(()->coralMode=false))
     ;
 
     //TODO: check processor superstate, check the onTrue onFalse
@@ -466,7 +469,8 @@ public class RobotContainer {
     )
     .onFalse(
       new InstantCommand(()->suctionSubsystem.SetWantedState(frc.robot.subsystems.SuctionSubsystem.WantedState.RELEASE), superStructure)
-    );
+    )
+    .onTrue(new InstantCommand(()->coralMode=false));
 
     //x - climber up, really just leds, this is FINAL, already climbed, stage
     funniOperator.button(3).onTrue(
@@ -481,7 +485,8 @@ public class RobotContainer {
     //y - l2, also l1 but wtv
     funniOperator.button(4).onTrue(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L2), superStructure)
-    );
+    )
+    .onTrue(new InstantCommand(()->coralMode=true));
 
     //right stick - intake (+ pickup)
     funniOperator.button(10).onTrue(
@@ -491,17 +496,20 @@ public class RobotContainer {
         pickupCoralSequence().until(this::getHasCoral),
         new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.PREPARE_TO_PLACE), superStructure)
       )
-    );
+    )
+    .onTrue(new InstantCommand(()->coralMode=true));
 
     //left bumper - l3
     funniOperator.button(5).onTrue(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L3), superStructure)
-    );
+    )
+    .onTrue(new InstantCommand(()->coralMode=true));
     
     //right bumper - l4
     funniOperator.button(6).onTrue(
       new InstantCommand(()->superStructure.SetWantedState(WantedSuperState.MOVE_TO_L4), superStructure)
-    );
+    )
+    .onTrue(new InstantCommand(()->coralMode=true));
 
     //left trigger - score + drop algae
     funniOperator.leftTrigger().onTrue(
@@ -541,7 +549,7 @@ public class RobotContainer {
           new WaitCommand(5)
       ), 
       ()->!getHasAlgae())
-      );
+    );
   }
 
   public Command pickupCoralSequence(){
